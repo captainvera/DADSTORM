@@ -6,7 +6,11 @@ using System.Threading.Tasks;
 
 namespace Operator
 {
-    public class Class1
+    public class Operator
     {
+        public void process(Tuple t)
+        {
+
+        }
     }
 }
