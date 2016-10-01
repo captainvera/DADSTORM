@@ -13,7 +13,24 @@ namespace Operator
 
         public Tuple(int size)
         {
-            _items = new string[5];
+            _items = new string[size];
+        }
+
+        public void setFromArrayCopy(string[] items)
+        {
+            if(items.Length == _items.Length)
+            {
+                items.CopyTo(_items, 0);
+            }
+            else
+            {
+                Console.WriteLine("[ERROR] Tried to initialize Tuple with wrong size array.");
+            }
+        }
+
+        public void set(int index, string data)
+        {
+            _items[index] = data;
         }
 
         public string get(int index)
