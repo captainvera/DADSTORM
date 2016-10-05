@@ -5,11 +5,11 @@ VisualStudioVersion = 14.0.23107.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Node", "Node\Node.csproj", "{77DE03B0-5C77-449D-8832-CB8E7FEA4246}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Slavemaster", "Slavemaster\Slavemaster.csproj", "{A15157CF-E8E4-4D48-8116-192B8116B0F8}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Replica", "Replica\Replica.csproj", "{BB544FCD-5ACE-49DE-8121-762836200E78}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Operator", "Operator\Operator.csproj", "{C76A9E46-0D37-42C6-88AB-CEEECC1484C0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Puppetmaster", "Puppetmaster\Puppetmaster.csproj", "{EF78A7A4-79D8-44B6-839B-0C3026972B25}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,10 +21,6 @@ Global
 		{77DE03B0-5C77-449D-8832-CB8E7FEA4246}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{77DE03B0-5C77-449D-8832-CB8E7FEA4246}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{77DE03B0-5C77-449D-8832-CB8E7FEA4246}.Release|Any CPU.Build.0 = Release|Any CPU
-		{A15157CF-E8E4-4D48-8116-192B8116B0F8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{A15157CF-E8E4-4D48-8116-192B8116B0F8}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{A15157CF-E8E4-4D48-8116-192B8116B0F8}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{A15157CF-E8E4-4D48-8116-192B8116B0F8}.Release|Any CPU.Build.0 = Release|Any CPU
 		{BB544FCD-5ACE-49DE-8121-762836200E78}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{BB544FCD-5ACE-49DE-8121-762836200E78}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BB544FCD-5ACE-49DE-8121-762836200E78}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -33,6 +29,10 @@ Global
 		{C76A9E46-0D37-42C6-88AB-CEEECC1484C0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C76A9E46-0D37-42C6-88AB-CEEECC1484C0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C76A9E46-0D37-42C6-88AB-CEEECC1484C0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EF78A7A4-79D8-44B6-839B-0C3026972B25}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EF78A7A4-79D8-44B6-839B-0C3026972B25}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EF78A7A4-79D8-44B6-839B-0C3026972B25}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EF78A7A4-79D8-44B6-839B-0C3026972B25}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
