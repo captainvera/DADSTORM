@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Operator
+namespace DADSTORM
 {
     public class Tuple
     {
@@ -24,7 +24,7 @@ namespace Operator
             }
             else
             {
-                Console.WriteLine("[ERROR] Tried to initialize Tuple with wrong size array.");
+                Console.WriteLine("[ERROR] Tried to initialize Tuple with incorrectly sized array");
             }
         }
 
