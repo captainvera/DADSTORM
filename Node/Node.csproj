@@ -44,10 +44,21 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Node.cs" />
+    <Compile Include="ProcessCreationService.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Logger\Logger.csproj">
+      <Project>{b14bd05d-8720-4cf5-85c1-edd939a179e3}</Project>
+      <Name>Logger</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Replica\Replica.csproj">
+      <Project>{bb544fcd-5ace-49de-8121-762836200e78}</Project>
+      <Name>Replica</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
