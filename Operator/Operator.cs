@@ -3,14 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using DADSTORM;
 
 namespace DADSTORM
 {
-    public class Operator
+    interface Operator<T>
     {
-        public void process(Tuple t)
-        {
-
-        }
+        T process(Tuple t);
     }
 }
