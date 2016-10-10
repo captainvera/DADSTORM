@@ -3,7 +3,7 @@ using DADSTORM;
 using Tuple = DADSTORM.Tuple;
 
 namespace DADSTORM{
-    public class COUNT : Operator<int>{
+    public class COUNT : IOperator<int>{
 
         private int _countNumber=0;
 

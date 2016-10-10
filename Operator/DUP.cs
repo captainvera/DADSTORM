@@ -3,13 +3,13 @@ using DADSTORM;
 using Tuple = DADSTORM.Tuple;
 
 namespace DADSTORM{
-    public class DUP : Operator<Tuple>{
+    public class DUP : IOperator<Tuple>{
 
         public DUP(){
         }
 
         public Tuple process(Tuple t){
-            return Tuple(t);
+            return new Tuple(t);
         }
 
     }
