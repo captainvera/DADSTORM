@@ -1,11 +1,9 @@
 using System;
-using DADSTORM;
-using Tuple = DADSTORM.Tuple;
-using WrongParameterException;
 
-namespace DADSTORM{
-    public class FILTER : Operator<Tuple>{
-        }
+namespace DADSTORM
+{
+    public class FILTER : IOperator<Tuple>
+    {
 
         private int _fieldNumber;
         private string _condition;
@@ -24,14 +22,31 @@ namespace DADSTORM{
         }
 
         public Tuple process(Tuple t){
-            if(_condition == "=" && t.get(_fieldNumber) == _testValue)
-                return t;
+            bool isNumber = false;
+            int field = 0;
+            int value = 0;
 
-            if(_condition == ">" && t.get(_fieldNumber) > _testValue)
-                return t;
+            try
+            {
+                field = Int32.Parse(t.get(_fieldNumber));
+                value = Int32.Parse(_testValue);
+                isNumber = true;
+            }
+            catch (FormatException e)
+            {
+                if (_condition != "=")
+                    throw e;
+            }
 
-            if(_condition == "<" && t.get(_fieldNumber) < _testValue)
-                return t;
+            if (isNumber == true)
+            {
+                if (_condition == "<" && field < value)
+                    return t;
+                if (_condition == "<" && field < value)
+                    return t;
+                if (_condition == "<" && field < value)
+                    return t;
+            }
 
             return null;
             //TODO check if null is correct thing to send
