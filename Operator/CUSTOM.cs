@@ -24,12 +24,15 @@ namespace DADSTORM{
             if (_method == null)
                 throw new WrongParameterException("CUSTOM operator, type:" + _type.ToString() + " has no method:" + method + " receiving a list of Strings");
 
+            _instance = Activator.CreateInstance(_type);
+
         }
 
         public Tuple process(Tuple t){
 
-            _instance = Activator.CreateInstance(_type);
-            object result = Activator.CreateInstance(_type, t.toArray());
+            object result = _method.Invoke(_instance, t.toArray());
+            
+            Type returnType = _method.ReturnType;
 
             return (Tuple) result;
         }

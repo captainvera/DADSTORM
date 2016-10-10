@@ -1,17 +1,30 @@
 using System;
+using System.Collections;
+using DADSTORM;
+using Tuple = DADSTORM.Tuple;
 
-
-public class UNIQ : Operator{
+public class UNIQ : IOperator<Tuple>{
 
   private int _fieldNumber;
+  private SortedList _sorted; 
 
   public UNIQ(int fieldNumber){
+
     _fieldNumber = fieldNumber; 
+    _sorted = new SortedList();
+
   }
 
   public Tuple process(Tuple t){
 
-    //TODO, ver com stor, como guardo lista para verificar que é unique
+      string val = t.get(_fieldNumber);
+
+      if (_sorted.Contains(val) == true)
+          return null;
+
+      _sorted.Add(val, val);
+
+      return t;
   
   }
 

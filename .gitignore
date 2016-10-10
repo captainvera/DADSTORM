@@ -564,3 +564,6 @@ __pycache__/
 
 ### VisualStudio Patch ###
 build/
+
+# Vim files
+*.swp

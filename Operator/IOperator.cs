@@ -7,7 +7,7 @@ using DADSTORM;
 
 namespace DADSTORM
 {
-    interface IOperator<T>
+    public interface IOperator<T>
     {
         T process(Tuple t);
     }
