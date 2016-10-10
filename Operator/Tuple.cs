@@ -17,7 +17,7 @@ namespace DADSTORM
         }
 
         public Tuple(Tuple tup){
-            _items = tup.getArray();
+            _items = tup.toArray();
             _size = _items.Length;
             
         }
@@ -44,7 +44,7 @@ namespace DADSTORM
             return _items[index];
         }
         
-        public string[] getArray()
+        public string[] toArray()
         {
             return _items;
         }
