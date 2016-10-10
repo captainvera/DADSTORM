@@ -23,5 +23,15 @@ namespace DADSTORM
         {
             Console.Write("[" + id + "] " + s); 
         }
+
+        public static void writeLine(string s, string id)
+        {
+            Console.WriteLine("[" + id + "] " + s);
+        }
+
+        public static void write(string s, string id)
+        {
+            Console.Write("[" + id + "] " + s);
+        }
     }
 }
