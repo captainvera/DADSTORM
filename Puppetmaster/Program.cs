@@ -20,7 +20,7 @@ namespace DADSTORM
             ChannelServices.RegisterChannel(channel, false);
 
             log.writeLine("Trying to connect");
-            ReplicaBroker rb = (ReplicaBroker)Activator.GetObject(typeof(ReplicaBroker),
+            Replica rb = (Replica)Activator.GetObject(typeof(Replica),
                 "tcp://localhost:10010/Replica1");
             if (rb == null)
                 log.writeLine("ERROR: NO SERVER");

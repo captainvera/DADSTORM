@@ -9,49 +9,60 @@ using System.Runtime.Remoting;
 
 namespace DADSTORM
 {
-    public class Replica 
+    public class ReplicaProcess
     {
-        private Logger log;
-        private IRoutingStrategy router;
-
-        public Replica()
+        public static void Main(string[] args)
         {
-            log = new Logger("ReplicaX");
-            router = new PrimaryRoutingStrategy();
-        } 
+            if(args.Length < 2)
+            {
+                Console.WriteLine("Wrong number of arguments provided, exiting.");
+                Console.ReadLine();
+                Environment.Exit(1);
+            }
 
-        public void Main()
-        {
-            log.writeLine("Starting operator replica");
+            string id = args[0];
+            string port = args[1];
+
+            //Might need proper implementation for naming: CHECK PROJ INSTR
+            string name = "Replica" + id;
+
+            Replica rep = new Replica(id, port);
 
             TcpChannel channel = new TcpChannel(10010);
             ChannelServices.RegisterChannel(channel, false);
 
-            ReplicaBroker rb = new ReplicaBroker(this);
-            RemotingServices.Marshal(rb, "Replica1", typeof(ReplicaBroker));
+            RemotingServices.Marshal(rep, name, typeof(Replica));
 
-            log.writeLine("Replica online");
-
+            Console.ReadLine();
         }
 
-        public string input(String t)
+        public static String getPath()
         {
-            log.writeLine("Got input " + t);
-            router.send(t);
-            return t;
+            return Environment.CurrentDirectory;
         }
     }
 
-    public class ReplicaBroker : MarshalByRefObject
+    //Should we have a broker between replica process and replica?
+    public class Replica : MarshalByRefObject
     {
-        private Replica master;
-        public ReplicaBroker(Replica r)
+
+        private string id, port;
+        private Boolean primary;
+
+        public Replica(string _id, string _port)
         {
-            master = r;
+            primary = false;
+            id = _id;
+            port = _port;
+            Logger log = new Logger("Replica" + id);
+
+            IRoutingStrategy router = new PrimaryRoutingStrategy();
+            log.writeLine("Replica " + id + " is now online");
         }
+
         public string input(String t)
         {
-            return master.input(t);
+            return "Bounced " + t;
         }
     }
 }

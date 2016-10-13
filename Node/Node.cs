@@ -12,12 +12,19 @@ namespace DADSTORM
 
         static void Main(string[] args)
         {
-            log = new Logger("NodeX");
+            log = new Logger("Physical Node");
 
             log.writeLine("Initializing PCS");
             ProcessCreationService pcs = new ProcessCreationService();
-            pcs.createProcess();
-            log.writeLine("Node initialized");
+
+            //TODO::Publish PCS online
+
+            log.writeLine("PCS created & online");
+
+            pcs.createProcess("1", "10010");
+
+            log.writeLine("Physical Node Initialized");
+
             Console.ReadLine();
         }
     }
