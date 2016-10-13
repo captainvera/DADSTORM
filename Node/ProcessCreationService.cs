@@ -11,25 +11,26 @@ namespace DADSTORM
 {
     class ProcessCreationService
     {
+        private Logger log;
+
         public ProcessCreationService()
         {
-
+            log = new Logger("Process Creation System"); 
         }
 
-        public void createProcess()
+        public void createProcess(string id, string port)
         {
-            Replica r = new Replica();
-            ThreadStart ts = new ThreadStart(r.Main);
-            Thread t = new Thread(ts);
-            t.Start();
-        }
+            log.writeLine("Creating new Replica Process | id =" + id + " | port = " + port);
 
-        public void listen()
-        {
-            while(true)
-            {
+            Process p = new Process();
+            string t = ReplicaProcess.getPath() + "\\Replica.exe";
+            p.StartInfo.FileName = t;
 
-            }
+            //Argument order: id , port (...?)
+            p.StartInfo.Arguments = id + " " + port;
+            p.Start();
+
+            log.writeLine("Replica " + id + " created");
         }
     }
 }
