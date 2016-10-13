@@ -17,9 +17,11 @@ namespace DADSTORM
         {
             Console.WriteLine("Hello");
             Puppetmaster pm = new Puppetmaster();
-            pm.readConfig();
             log = new Logger("Puppetmaster");
 
+            pm.makeOperatorDrafts(pm.readConfig());
+
+            /*
             TcpChannel channel = new TcpChannel();
             ChannelServices.RegisterChannel(channel, false);
 
@@ -33,6 +35,7 @@ namespace DADSTORM
                 string s = rb.input("TEST");
                 log.writeLine("Got input: " + s);
             }
+            */
 
             Console.ReadLine();
         }
@@ -55,18 +58,22 @@ namespace DADSTORM
                 System.Console.WriteLine(st);
             }
 
+            System.Console.WriteLine("Done splitting. Size = {0}. Continue?", splitFile.Count());
             System.Console.ReadLine();
 
             return splitFile;
         }
         
-        public ArrayList makeNodeDrafts(string[] splitFile){
-            ArrayList nodeDrafts = new ArrayList();
+        public ArrayList makeOperatorDrafts(string[] splitFile){
 
-            string id;
+            System.Console.WriteLine("Building Operator drafts from previously split file.");
+
+            ArrayList operatorDrafts = new ArrayList();
+
+            string id = "placeholder";
+            int rep = 20; //should never be 20
+            string rout = "placeholder";
             ArrayList inputs = new ArrayList();
-            int rep;
-            string rout;
             ArrayList addr = new ArrayList();
             ArrayList spec = new ArrayList();
 
@@ -74,53 +81,85 @@ namespace DADSTORM
             n = i = 0;
 
             while(n < splitFile.Length){
+                System.Console.WriteLine("\nWord being filtered: {0} - n = {1}", splitFile[n], n);
                 switch (splitFile[n])
                 {
                     case "INPUT_OPS":
                         i = n+1;
                         while (!splitFile[i].Equals("REP_FACT")){
+                            System.Console.WriteLine("Operator's input: {0}", splitFile[i]);
                             inputs.Add(splitFile[i]);
+                            i++;
                         }
-                        n = i;
+                        n = i - 1;
                         break;
                     case "REP_FACT":
                         rep = Convert.ToInt32(splitFile[n + 1]);
+                        System.Console.WriteLine("Operator rep factor: {0}", rep);
                         n++;
                         break;
                     case "ROUTING":
                         rout = splitFile[n + 1];
+                        System.Console.WriteLine("Operator routing policy: {0}", rout);
                         n++;
                         break;
                     case "ADDRESS":
                         i = n + 1;
-                        while (!splitFile[i].Equals("OPERATOR_SPEC"))
-                        {
+                        while (!splitFile[i].Equals("OPERATOR_SPEC")) {
+                            System.Console.WriteLine("Adresses: {0}", splitFile[i]);
                             addr.Add(splitFile[i]);
+                            i++;
                         }
-                        n = i;
+                        n = i - 1;
                         break;
                     case "OPERATOR_SPEC":
+                        i = n + 1;
+                        while (!splitFile[i].Equals("INPUT_OPS")) {
+                            System.Console.WriteLine("Operator spec items: {0}. i = {1}", splitFile[i], i);
+                            spec.Add(splitFile[i]);
+                            i++;
+                            if (i == splitFile.Count()) {
+                                break;
+                            }
+                        }
+                        if (i < splitFile.Count()) {
+                            spec.RemoveAt(spec.Count - 1);
+                            System.Console.WriteLine("spec array's current last item: {0}", spec[spec.Count - 1]);
+                            n = i - 2;
+                        }
+                        else {
+                            n = i;
+                        }
+                        operatorDrafts.Add(new OperatorDraft(id, inputs, rep, rout, addr, spec));
+                        System.Console.WriteLine("Added new operator draft to ArrayList. Continue?");
+                        inputs = new ArrayList();
+                        addr = new ArrayList();
+                        spec = new ArrayList();
+                        System.Console.ReadLine();
                         break;
                     default:
+                        id = splitFile[n];
+                        System.Console.WriteLine("New operator with id: {0}", id);
+                        System.Console.WriteLine("Entered default statement.");
                         break;
                 }
-                nodeDrafts.Add(new NodeDraft(id, inputs, rep, rout, addr, spec));
+                n++;
             }
-
-            return nodeDrafts;
+            System.Console.WriteLine("Drafts all done.");
+            return operatorDrafts;
         }
         
     }
 
-    class NodeDraft{
-        string op_id;
-        ArrayList input_ops = new ArrayList();
-        int rep_fact;
-        string routing;
-        ArrayList address = new ArrayList();
-        ArrayList op_spec = new ArrayList();
+    class OperatorDraft{
+        public string op_id;
+        public ArrayList input_ops = new ArrayList();
+        public int rep_fact;
+        public string routing;
+        public ArrayList address = new ArrayList();
+        public ArrayList op_spec = new ArrayList();
 
-        public NodeDraft(string id, ArrayList inputs, int rep, string rout, ArrayList addr,ArrayList spec){
+        public OperatorDraft(string id, ArrayList inputs, int rep, string rout, ArrayList addr,ArrayList spec){
             op_id = id;
             input_ops = inputs;
             rep_fact = rep;
