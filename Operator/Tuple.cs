@@ -16,6 +16,12 @@ namespace DADSTORM
             _items = new string[size];
         }
 
+        public Tuple(Tuple tup){
+            _items = tup.toArray();
+            _size = _items.Length;
+            
+        }
+
         public void setFromArrayCopy(string[] items)
         {
             if(items.Length == _items.Length)
@@ -38,7 +44,7 @@ namespace DADSTORM
             return _items[index];
         }
         
-        public string[] getArray()
+        public string[] toArray()
         {
             return _items;
         }
