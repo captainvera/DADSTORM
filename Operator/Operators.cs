@@ -10,19 +10,22 @@ using System.Globalization;
 
 namespace DADSTORM
 {
-    public interface IOperator<T>
+    public interface IOperator
     {
-        T process(Tuple t);
+        Tuple process(Tuple t);
     }
 
-    public class COUNT : IOperator<int>
+    public class COUNT : IOperator
     {
 
         private int _countNumber = 0;
 
-        public int process(Tuple t)
+        public Tuple process(Tuple t)
         {
-            return _countNumber++;
+            Tuple res = new Tuple(1);
+            res.set(0, _countNumber.ToString());
+            _countNumber++;
+            return res;
         }
 
         public int get()
@@ -31,7 +34,7 @@ namespace DADSTORM
         }
     }
 
-    public class CUSTOM : IOperator<Tuple>
+    public class CUSTOM : IOperator
     {
 
         private MethodInfo _method;
@@ -69,7 +72,7 @@ namespace DADSTORM
 
     }
 
-    public class DUP : IOperator<Tuple>
+    public class DUP : IOperator
     {
 
         public DUP()
@@ -83,11 +86,12 @@ namespace DADSTORM
 
     }
 
-    public class FILTER : IOperator<Tuple>
+    public class FILTER : IOperator
     {
 
         private int _fieldNumber;
         private string _condition;
+        private string _stringValue;
         private bool _isnumber;
         private double _doubleValue;
         private string[] _possibleConditions = { "=", "<", ">" };
@@ -149,7 +153,7 @@ namespace DADSTORM
 
     }
 
-    public class UNIQ : IOperator<Tuple>
+    public class UNIQ : IOperator
     {
 
         private int _fieldNumber;

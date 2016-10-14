@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 
 namespace DADSTORM
 {
+    [Serializable]
     public class Tuple
     {
         private int _size;
