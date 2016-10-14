@@ -8,21 +8,30 @@ namespace DADSTORM
 {
     interface IRoutingStrategy
     {
-        void setReplicaList(List<string> replicas);
-        void send(String data);
+        void route(Tuple data);
     }
 
     class PrimaryRoutingStrategy : IRoutingStrategy
     {
-        
-        public void setReplicaList(List<string> replicas)
-        {
+        private string[] _replicas;
+        private Replica _parent;
 
+        public PrimaryRoutingStrategy(Replica parent)
+        {
+            _parent = parent;
+            _replicas = parent.getOutputReplicas();
         }
 
-        public void send(String data)
+        public void route(Tuple data)
         {
-        
+            if (_replicas[0] != "X")
+            {
+                _parent.send(data, _replicas[0]);
+            }
+            else
+            {
+                Logger.writeLine("End of streaming chain detected!", "PrimaryRouting");
+            }
         }
     }
 }

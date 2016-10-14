@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Runtime.Remoting.Channels.Tcp;
 using System.Runtime.Remoting.Channels;
 using System.Runtime.Remoting;
+using System.Collections;
 
 namespace DADSTORM
 {
@@ -13,7 +14,7 @@ namespace DADSTORM
     {
         public static void Main(string[] args)
         {
-            if(args.Length < 2)
+            if(args.Length < 3)
             {
                 Console.WriteLine("Wrong number of arguments provided, exiting.");
                 Console.ReadLine();
@@ -22,15 +23,24 @@ namespace DADSTORM
 
             string id = args[0];
             string port = args[1];
+            List<string> outputs = new List<string>();
+
+            //This are our output replicas!
+            for(int i = 2; i < args.Length; i++)
+            {
+                outputs.Add(args[i]);
+            }
+
+            Logger.writeLine("Processed " + outputs.Count + " output replicas", "ReplicaProcess");
 
             //Might need proper implementation for naming: CHECK PROJ INSTR
             string name = "Replica" + id;
 
-            Replica rep = new Replica(id, port);
 
-            TcpChannel channel = new TcpChannel(10010);
+            TcpChannel channel = new TcpChannel(Int32.Parse(port));
             ChannelServices.RegisterChannel(channel, false);
 
+            Replica rep = new Replica(id, port.Replace("10", "11"), outputs.ToArray());
             RemotingServices.Marshal(rep, name, typeof(Replica));
 
             Console.ReadLine();
@@ -45,29 +55,66 @@ namespace DADSTORM
     //Should we have a broker between replica process and replica?
     public class Replica : MarshalByRefObject
     {
+        private Logger log;
 
         private string id, port;
+        private string[] output;
         private Boolean primary;
 
-        public Replica(string _id, string _port)
+        private IOperator op;
+        private IRoutingStrategy router;
+
+        private TcpChannel channel;
+
+        public Replica(string _id, string _port, string[] _next)
         {
+            //Replica configuration
             primary = false;
             id = _id;
             port = _port;
-            Logger log = new Logger("Replica" + id);
+            output = _next;
 
-            IRoutingStrategy router = new PrimaryRoutingStrategy();
+            log = new Logger("Replica" + id);
+
+            //Routing Strategy for this replica
+            router = new PrimaryRoutingStrategy(this);
+            op = new DUP();
+
+            log.writeLine("Initialized Replica " + id + " with out port " + port);
+
+            //Client TCP Channel to connect with other replicas
+            //Fix Int32 parse -> more security plz
+            IDictionary propBag = new Hashtable(); 
+            propBag["port"] = Int32.Parse(port);
+            propBag["name"] = "tcpOut";  // here enter unique channel name
+
+            channel = new TcpChannel(propBag, new BinaryClientFormatterSinkProvider(), null);
+            ChannelServices.RegisterChannel(channel, false);
+
             log.writeLine("Replica " + id + " is now online");
         }
 
-        public string input(String t)
+        public void input(Tuple t)
         {
-            return "Bounced " + t;
+            log.writeLine("Received input: " + t.get(0));
+            Tuple res = op.process(t);
+            router.route(res);
+        }
+
+        public void send(Tuple t, string dest)
+        {
+            Replica next = (Replica)Activator.GetObject(typeof(Replica), dest);
+            next.input(t);
         }
 
         public Boolean isPrimary()
         {
             return primary;
+        }
+
+        public string[] getOutputReplicas()
+        {
+            return output; 
         }
     }
 }

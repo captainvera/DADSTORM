@@ -53,6 +53,10 @@
       <Project>{b14bd05d-8720-4cf5-85c1-edd939a179e3}</Project>
       <Name>Logger</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Operator\Operator.csproj">
+      <Project>{c76a9e46-0d37-42c6-88ab-ceeecc1484c0}</Project>
+      <Name>Operator</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

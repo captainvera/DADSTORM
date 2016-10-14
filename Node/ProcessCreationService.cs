@@ -18,7 +18,7 @@ namespace DADSTORM
             log = new Logger("Process Creation System"); 
         }
 
-        public void createProcess(string id, string port)
+        public void createProcess(string id, string port, string[] next)
         {
             log.writeLine("Creating new Replica Process | id = " + id + " | port = " + port);
 
@@ -27,7 +27,11 @@ namespace DADSTORM
             p.StartInfo.FileName = t;
 
             //Argument order: id , port (...?)
-            p.StartInfo.Arguments = id + " " + port;
+            const string separator = " ";
+            string outputs = string.Join(separator, next);
+
+            p.StartInfo.Arguments = id + " " + port + " " + outputs;
+
             p.Start();
 
             log.writeLine("Replica " + id + " created");
