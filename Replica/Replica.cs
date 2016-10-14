@@ -64,5 +64,10 @@ namespace DADSTORM
         {
             return "Bounced " + t;
         }
+
+        public Boolean isPrimary()
+        {
+            return primary;
+        }
     }
 }

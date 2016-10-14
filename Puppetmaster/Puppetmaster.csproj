@@ -46,6 +46,7 @@
   <ItemGroup>
     <Compile Include="Commands.cs" />
     <Compile Include="Shell.cs" />
+    <Compile Include="Parser.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
@@ -56,6 +57,10 @@
     <ProjectReference Include="..\Logger\Logger.csproj">
       <Project>{b14bd05d-8720-4cf5-85c1-edd939a179e3}</Project>
       <Name>Logger</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Node\Node.csproj">
+      <Project>{77de03b0-5c77-449d-8832-cb8e7fea4246}</Project>
+      <Name>Node</Name>
     </ProjectReference>
     <ProjectReference Include="..\Replica\Replica.csproj">
       <Project>{bb544fcd-5ace-49de-8121-762836200e78}</Project>

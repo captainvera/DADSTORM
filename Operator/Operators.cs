@@ -89,7 +89,6 @@ namespace DADSTORM
         private int _fieldNumber;
         private string _condition;
         private bool _isnumber;
-        private string _stringValue;
         private double _doubleValue;
         private string[] _possibleConditions = { "=", "<", ">" };
 
