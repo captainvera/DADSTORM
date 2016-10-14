@@ -9,7 +9,7 @@ using DADSTORM;
 
 namespace DADSTORM
 {
-    class ProcessCreationService
+    public class ProcessCreationService : MarshalByRefObject
     {
         private Logger log;
 
@@ -20,7 +20,7 @@ namespace DADSTORM
 
         public void createProcess(string id, string port)
         {
-            log.writeLine("Creating new Replica Process | id =" + id + " | port = " + port);
+            log.writeLine("Creating new Replica Process | id = " + id + " | port = " + port);
 
             Process p = new Process();
             string t = ReplicaProcess.getPath() + "\\Replica.exe";
