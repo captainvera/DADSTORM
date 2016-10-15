@@ -18,9 +18,10 @@ namespace DADSTORM
             log = new Logger("Process Creation System"); 
         }
 
-        public void createProcess(string id, string port, string[] next)
+        public void createProcess(OperatorDTO op, string port, string[] next)
         {
-            log.writeLine("Creating new Replica Process | id = " + id + " | port = " + port);
+
+            log.writeLine("Creating new Replica Process | id = " + op.op_id + " | port = " + port);
 
             Process p = new Process();
             string t = ReplicaProcess.getPath() + "\\Replica.exe";
@@ -30,11 +31,11 @@ namespace DADSTORM
             const string separator = " ";
             string outputs = string.Join(separator, next);
 
-            p.StartInfo.Arguments = id + " " + port + " " + outputs;
+            p.StartInfo.Arguments = op.op_id + " " + port + " " + outputs;
 
             p.Start();
 
-            log.writeLine("Replica " + id + " created");
+            log.writeLine("Replica " + op.op_id + " created");
         }
     }
 }

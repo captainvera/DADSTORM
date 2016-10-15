@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Collections;
+using System.Text.RegularExpressions;
 
 
 namespace DADSTORM {
@@ -112,6 +113,20 @@ namespace DADSTORM {
             System.Console.ReadLine();
 
             return splitFile;
+        }
+
+        public string parsePortFromAddress(string address) {
+            string portRegex = @"\:[A-Za-z0-9\-]+\/";
+            Match mc = Regex.Match(address, portRegex);
+            string match = mc.Value;
+            return match.Substring(1, match.Length - 2);
+        }
+
+        public string parseIPFromAddress(string address) {
+            string IPRegex = @"tcp://[0-9\.]+:";
+            Match mc = Regex.Match(address, IPRegex);
+            string IP = mc.Value;
+            return IP.Substring(0, IP.Length - 1);
         }
     }
 

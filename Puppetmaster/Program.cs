@@ -21,13 +21,17 @@ namespace DADSTORM
             log.writeLine("Starting Puppetmaster");
             log.writeLine("Parsing configuration file");
             
-            //Parser parser = new Parser();
-            //Dictionary<string, OperatorDTO> operatorDTOs = parser.makeOperatorDTOs(parser.readConfig());
+            Parser parser = new Parser();
+            Dictionary<string, OperatorDTO> operatorDTOs = parser.makeOperatorDTOs(parser.readConfig());
 
             log.writeLine("Done");
 
-            //Puppetmaster pm = new Puppetmaster();
+            Puppetmaster pm = new Puppetmaster();
 
+            //Reaching every PCS and sending it the DTOs
+            pm.setupOperators(operatorDTOs, parser, log);
+
+            /*
             TcpChannel channel = new TcpChannel();
             ChannelServices.RegisterChannel(channel, false);
             
@@ -69,11 +73,30 @@ namespace DADSTORM
                     System.Threading.Thread.Sleep(100);
                 }
             }
-
+            */
             Console.ReadLine();
         }
     }
 
     class Puppetmaster {
+
+        public void setupOperators(Dictionary<string, OperatorDTO> operatorDTOs, Parser parser, Logger log) {
+            log.writeLine("Setting up operators.");
+            //foreach (KeyValuePair<string, OperatorDTO> op in operatorDTOs) {
+            for(int i = 0; i < operatorDTOs.Count; i++) {
+                foreach(string address in operatorDTOs.ElementAt(i).Value.address) {
+                    string pcsAddress = parser.parseIPFromAddress(address);
+                    pcsAddress = pcsAddress + ":10000/pcs";
+                    System.Console.WriteLine("Contacting {0}", pcsAddress);
+                    ProcessCreationService pcs = (ProcessCreationService)Activator.GetObject(
+                typeof(ProcessCreationService), pcsAddress);
+                    if (pcs == null)
+                        log.writeLine("ERROR: NO PCS SERVER");
+                    if (i++ == operatorDTOs.Count)
+                        pcs.createProcess(operatorDTOs.ElementAt(i).Value, parser.parsePortFromAddress(address), new string[] { "X" });
+                    pcs.createProcess(operatorDTOs.ElementAt(i).Value, parser.parsePortFromAddress(address), (string[])operatorDTOs.ElementAt(i++).Value.address.ToArray(typeof(string)));
+                }
+            }
+        }
     };
 }

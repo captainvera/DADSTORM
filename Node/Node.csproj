@@ -45,6 +45,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Node.cs" />
+    <Compile Include="OperatorDTO.cs" />
     <Compile Include="ProcessCreationService.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
