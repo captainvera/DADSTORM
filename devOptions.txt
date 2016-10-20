@@ -1,0 +1,6 @@
+Decidimos fazer uma classe à parte "Parser" que fica encarregue de todo o tipo de parsing, principalmente do config file.
+Criámos uma classe OperatorDTO que é uma representação de cada operador. Estes DTOs são preenchidos pelo parser quando lê o config file.
+Estes DTOs são guardados num dicionário pois continua a ser iterável e fecilitará no futuro o look up de informações sobre um operador específico.
+Estes DTOs são objectos serializáveis portanto são enviados para o PCS correspondente, que poderá aceder rapidamente a toda a informação que necessitar para lançar um processo com uma réplica.
+
+Decidimos passar ao PCS a informação dos operadores a que o operador que este está a criar, ou seja os endereçoes dos operadores seguintes, para este poder enviar o resultado do processamento para o próximo operador.
