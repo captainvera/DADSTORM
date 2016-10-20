@@ -117,6 +117,7 @@ namespace DADSTORM
                     throw new WrongParameterException("With condition: \"" + _condition + "\" value: \"" + testValue + " needs to be a number");
 
             }
+            else _stringValue = testValue;
 
         }
 

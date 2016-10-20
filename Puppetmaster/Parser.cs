@@ -19,9 +19,9 @@ namespace DADSTORM {
             string id = "placeholder";
             string rep = "placeholder";
             string rout = "placeholder";
-            ArrayList inputs = new ArrayList();
-            ArrayList addr = new ArrayList();
-            ArrayList spec = new ArrayList();
+            List<string> inputs = new List<string>();
+            List<string> addr = new List<string>();
+            List<string> spec = new List<string>();
 
             int n, i;
             n = i = 0;
@@ -77,9 +77,9 @@ namespace DADSTORM {
                         }
                         operatorDTOs.Add(id, new OperatorDTO(id, inputs, rep, rout, addr, spec));
                         System.Console.WriteLine("Added new operator draft to ArrayList. Continue?");
-                        inputs = new ArrayList();
-                        addr = new ArrayList();
-                        spec = new ArrayList();
+                        inputs = new List<string>();
+                        addr = new List<string>();
+                        spec = new List<string>();
                         System.Console.ReadLine();
                         break;
                     default:
@@ -96,7 +96,7 @@ namespace DADSTORM {
 
         public string[] readConfig() {
             //read file as one string
-            string config_file = System.IO.File.ReadAllText(@"C:\Users\José Semedo\Desktop\DAD\DADSTORM\CONFIG_FILE");
+            string config_file = System.IO.File.ReadAllText(@"..\CONFIG_FILE");
 
             //TODO remove - print string read   --- ask for input
             System.Console.WriteLine("Contents of CONFIG_FILE: {0}", config_file);
@@ -115,14 +115,14 @@ namespace DADSTORM {
             return splitFile;
         }
 
-        public string parsePortFromAddress(string address) {
+        public static string parsePortFromAddress(string address) {
             string portRegex = @"\:[A-Za-z0-9\-]+\/";
             Match mc = Regex.Match(address, portRegex);
             string match = mc.Value;
             return match.Substring(1, match.Length - 2);
         }
 
-        public string parseIPFromAddress(string address) {
+        public static string parseIPFromAddress(string address) {
             string IPRegex = @"tcp://[0-9\.]+:";
             Match mc = Regex.Match(address, IPRegex);
             string IP = mc.Value;

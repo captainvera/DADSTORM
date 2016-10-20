@@ -1,18 +1,19 @@
 ﻿using System;
 using System.Collections;
+using System.Collections.Generic;
 
 namespace DADSTORM
 {
     public class OperatorDTO
     {
         public string op_id;
-        public ArrayList input_ops = new ArrayList();
+        public List<string> input_ops = new List<string>();
         public string rep_fact;
         public string routing;
-        public ArrayList address = new ArrayList();
-        public ArrayList op_spec = new ArrayList();
+        public List<string> address = new List<string>();
+        public List<string> op_spec = new List<string>();
 
-        public OperatorDTO(string id, ArrayList inputs, string rep, string rout, ArrayList addr, ArrayList spec)
+        public OperatorDTO(string id, List<string> inputs, string rep, string rout, List<string> addr, List<string> spec)
         {
             op_id = id;
             input_ops = inputs;
