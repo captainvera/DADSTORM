@@ -22,17 +22,21 @@ namespace DADSTORM
             log.writeLine("Parsing configuration file");
             
             Parser parser = new Parser();
-            parser.readCommands();
+
+            string[] commands =  parser.readCommands();
             Dictionary<string, OperatorDTO> operatorDTOs = parser.makeOperatorDTOs(parser.readConfigOps());
 
+            /* prints to check if DTOs are well formed
+             * TODO - delete
             System.Console.WriteLine(" OP2.ports[0] : {0}", operatorDTOs["OP2"].ports[0]);
             System.Console.WriteLine("OP2ports[1]: {0}", operatorDTOs["OP2"].ports[1]);
             System.Console.WriteLine("OP2.next_op_addresses[0]: {0}", operatorDTOs["OP2"].next_op_addresses[0]);
             System.Console.WriteLine("OP2.next_op_addresses[1]: {0}", operatorDTOs["OP2"].next_op_addresses[1]);
+            */
 
             log.writeLine("Done");
 
-            Puppetmaster pm = new Puppetmaster();
+            Puppetmaster pm = new Puppetmaster(operatorDTOs, commands, log);
 
             //Reaching every PCS and sending it the DTOs
             //pm.setupOperators(operatorDTOs, parser, log);
@@ -86,6 +90,18 @@ namespace DADSTORM
 
     class Puppetmaster {
 
+        Logger logger;
+        public Dictionary<string, OperatorDTO> operatorDTOs;
+        public string[] commands;
+
+
+        public Puppetmaster(Dictionary<string, OperatorDTO> opDTOs, string[] cmnds, Logger log) {
+            operatorDTOs = opDTOs;
+            commands = cmnds;
+            logger = log;
+        }
+
+
         public void setupOperators(Dictionary<string, OperatorDTO> operatorDTOs, Parser parser, Logger log) {
             log.writeLine("Setting up operators.");
             //foreach (KeyValuePair<string, OperatorDTO> op in operatorDTOs) {
@@ -101,5 +117,33 @@ namespace DADSTORM
                 }
             }
         }
+
+        public void setUpOperators() {
+            logger.writeLine("Setting up operators.");
+            foreach (OperatorDTO op in operatorDTOs.Values) {
+                sendToPCS(op);
+            }
+        }
+
+        public void sendToPCS(OperatorDTO op) {
+            foreach(String replicaAddress in op.address) {
+                //logger.writeLine("Reaching PCS at {0} to set up ", PCSaddress, op.op_id);
+                string PCSaddress = Parser.parseIPFromAddress(replicaAddress) + ":10000/pcs";
+                createReplica(PCSaddress, op);
+            }
+        }
+
+        public void createReplica(string PCSaddress, OperatorDTO op) {
+            ProcessCreationService pcs = getPCS(PCSaddress, op);
+            if (pcs == null)
+                logger.writeLine("Couldn't reach PCS.");
+            pcs.createProcess(op);
+        }
+
+        public ProcessCreationService getPCS(string PCSaddress, OperatorDTO op) {
+            ProcessCreationService pcs = (ProcessCreationService)Activator.GetObject(typeof(ProcessCreationService), PCSaddress);
+            return pcs;
+        }
+
     };
 }
