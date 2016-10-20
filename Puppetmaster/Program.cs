@@ -22,14 +22,20 @@ namespace DADSTORM
             log.writeLine("Parsing configuration file");
             
             Parser parser = new Parser();
-            Dictionary<string, OperatorDTO> operatorDTOs = parser.makeOperatorDTOs(parser.readConfig());
+            parser.readCommands();
+            Dictionary<string, OperatorDTO> operatorDTOs = parser.makeOperatorDTOs(parser.readConfigOps());
+
+            System.Console.WriteLine(" OP2.ports[0] : {0}", operatorDTOs["OP2"].ports[0]);
+            System.Console.WriteLine("OP2ports[1]: {0}", operatorDTOs["OP2"].ports[1]);
+            System.Console.WriteLine("OP2.next_op_addresses[0]: {0}", operatorDTOs["OP2"].next_op_addresses[0]);
+            System.Console.WriteLine("OP2.next_op_addresses[1]: {0}", operatorDTOs["OP2"].next_op_addresses[1]);
 
             log.writeLine("Done");
 
             Puppetmaster pm = new Puppetmaster();
 
             //Reaching every PCS and sending it the DTOs
-            pm.setupOperators(operatorDTOs, parser, log);
+            //pm.setupOperators(operatorDTOs, parser, log);
 
             /*
             TcpChannel channel = new TcpChannel();
@@ -85,16 +91,13 @@ namespace DADSTORM
             //foreach (KeyValuePair<string, OperatorDTO> op in operatorDTOs) {
             for(int i = 0; i < operatorDTOs.Count; i++) {
                 foreach(string address in operatorDTOs.ElementAt(i).Value.address) {
-                    string pcsAddress = parser.parseIPFromAddress(address);
+                    string pcsAddress = Parser.parseIPFromAddress(address);
                     pcsAddress = pcsAddress + ":10000/pcs";
                     System.Console.WriteLine("Contacting {0}", pcsAddress);
-                    ProcessCreationService pcs = (ProcessCreationService)Activator.GetObject(
-                typeof(ProcessCreationService), pcsAddress);
+                    ProcessCreationService pcs = (ProcessCreationService)Activator.GetObject(typeof(ProcessCreationService), pcsAddress);
                     if (pcs == null)
                         log.writeLine("ERROR: NO PCS SERVER");
-                    if (i++ == operatorDTOs.Count)
-                        pcs.createProcess(operatorDTOs.ElementAt(i).Value, parser.parsePortFromAddress(address), new string[] { "X" });
-                    pcs.createProcess(operatorDTOs.ElementAt(i).Value, parser.parsePortFromAddress(address), (string[])operatorDTOs.ElementAt(i++).Value.address.ToArray(typeof(string)));
+                    pcs.createProcess(operatorDTOs.ElementAt(i).Value);
                 }
             }
         }

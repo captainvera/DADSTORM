@@ -22,6 +22,7 @@ namespace DADSTORM {
             List<string> inputs = new List<string>();
             List<string> addr = new List<string>();
             List<string> spec = new List<string>();
+            List<string> port = new List<string>();
 
             int n, i;
             n = i = 0;
@@ -29,37 +30,38 @@ namespace DADSTORM {
             while (n < splitFile.Length) {
                 System.Console.WriteLine("\nWord being filtered: {0} - n = {1}", splitFile[n], n);
                 switch (splitFile[n]) {
-                    case "INPUT_OPS":
-                        i = n + 1;
-                        while (!splitFile[i].Equals("REP_FACT")) {
+                    case "input":
+                        i = n + 2;
+                        while (!splitFile[i].Equals("rep")) {
                             System.Console.WriteLine("Operator's input: {0}", splitFile[i]);
                             inputs.Add(splitFile[i]);
                             i++;
                         }
                         n = i - 1;
                         break;
-                    case "REP_FACT":
-                        rep = splitFile[n + 1];
+                    case "rep":
+                        rep = splitFile[n + 2];
                         System.Console.WriteLine("Operator rep factor: {0}", rep);
-                        n++;
+                        n += 2;
                         break;
-                    case "ROUTING":
+                    case "routing":
                         rout = splitFile[n + 1];
                         System.Console.WriteLine("Operator routing policy: {0}", rout);
                         n++;
                         break;
-                    case "ADDRESS":
+                    case "address":
                         i = n + 1;
-                        while (!splitFile[i].Equals("OPERATOR_SPEC")) {
+                        while (!splitFile[i].Equals("operator")) {
                             System.Console.WriteLine("Adresses: {0}", splitFile[i]);
                             addr.Add(splitFile[i]);
+                            port.Add(Parser.parsePortFromAddress(splitFile[i]));
                             i++;
                         }
                         n = i - 1;
                         break;
-                    case "OPERATOR_SPEC":
-                        i = n + 1;
-                        while (!splitFile[i].Equals("INPUT_OPS")) {
+                    case "operator":
+                        i = n + 2;
+                        while (!splitFile[i].Equals("input")) {
                             System.Console.WriteLine("Operator spec items: {0}. i = {1}", splitFile[i], i);
                             spec.Add(splitFile[i]);
                             i++;
@@ -75,11 +77,12 @@ namespace DADSTORM {
                         else {
                             n = i;
                         }
-                        operatorDTOs.Add(id, new OperatorDTO(id, inputs, rep, rout, addr, spec));
+                        operatorDTOs.Add(id, new OperatorDTO(id, inputs, rep, rout, addr, spec, port));
                         System.Console.WriteLine("Added new operator draft to ArrayList. Continue?");
                         inputs = new List<string>();
                         addr = new List<string>();
                         spec = new List<string>();
+                        port = new List<string>();
                         System.Console.ReadLine();
                         break;
                     default:
@@ -91,28 +94,52 @@ namespace DADSTORM {
                 n++;
             }
             System.Console.WriteLine("Drafts all done.");
+
+            //setting DTO's next_op_addresses parameter
+            for (int j = 0; j < operatorDTOs.Count - 2; j++) {
+                operatorDTOs.ElementAt(j).Value.next_op_addresses = operatorDTOs.ElementAt(j + 1).Value.address;
+            }
+            operatorDTOs.ElementAt(operatorDTOs.Count - 1).Value.next_op_addresses = new List<string> { "X" };
+            
+
             return operatorDTOs;
         }
 
-        public string[] readConfig() {
-            //read file as one string
-            string config_file = System.IO.File.ReadAllText(@"..\CONFIG_FILE");
+        public string[] readConfigOps() {
 
-            //TODO remove - print string read   --- ask for input
-            System.Console.WriteLine("Contents of CONFIG_FILE: {0}", config_file);
+            string opDef = "";
+            System.IO.StreamReader reader = new System.IO.StreamReader(@"..\..\..\dadstorm.config");
 
-            //splitting text
-            char[] splitChars = { ' ', ',', '\t', '\n' };
-            string[] splitFile = config_file.Split(splitChars, StringSplitOptions.RemoveEmptyEntries);
-
-            foreach (string st in splitFile) {
-                System.Console.WriteLine(st);
+            string line = reader.ReadLine();
+            while ((line = reader.ReadLine()) != null) {
+                if(line.StartsWith("OP"))
+                    opDef = opDef + " " + line;
             }
 
+            //splitting text
+            char[] splitChars = { ' ', ',', '\t', '\n', '\r' };
+            string[] splitFile = opDef.Split(splitChars, StringSplitOptions.RemoveEmptyEntries);            
+            
             System.Console.WriteLine("Done splitting. Size = {0}. Continue?", splitFile.Count());
             System.Console.ReadLine();
-
+            
             return splitFile;
+        }
+
+        public string[] readCommands() {
+            List<string> commands = new List<string>();
+            System.IO.StreamReader reader = new System.IO.StreamReader(@"..\..\..\dadstorm.config");
+
+            string line = reader.ReadLine();
+            while ((line = reader.ReadLine()) != null) {
+                if (!line.StartsWith("OP") & !line.StartsWith("%"))
+                    commands.Add(line);
+            }
+            commands.RemoveAll(string.IsNullOrWhiteSpace);
+            foreach (string st in commands) {
+                System.Console.WriteLine(st);
+            }
+            return commands.ToArray();
         }
 
         public static string parsePortFromAddress(string address) {

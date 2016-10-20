@@ -18,9 +18,9 @@ namespace DADSTORM
             log = new Logger("Process Creation System"); 
         }
 
-        public void createProcess(OperatorDTO op, string port, string[] next)
+        public void createProcess(OperatorDTO op)
         {
-
+            /*
             log.writeLine("Creating new Replica Process | id = " + op.op_id + " | port = " + port);
 
             Process p = new Process();
@@ -36,6 +36,7 @@ namespace DADSTORM
             p.Start();
 
             log.writeLine("Replica " + op.op_id + " created");
+            */
         }
     }
 }
