@@ -129,22 +129,38 @@ namespace DADSTORM
             return pcs;
         }
 
+        public Replica getReplica(string address)
+        {
+            Replica rep = (Replica)Activator.GetObject(typeof(Replica), address);
+            return rep;
+        }
+
         public void start(string op)
         {
             OperatorDTO oper = operatorDTOs[op];
-            if(oper != null)
-                sendToPCS(oper);
+            if (oper != null)
+            {
+                for (int i = 0; i < oper.address.Count; i++)
+                {
+                    Replica rep = getReplica(oper.address[i]);
+                    //rep.start();
+                }
+
+            }
         }
 
         public void stop(string op)
         {
-            //who handles destruction? should pcs kill or replica die?
+            OperatorDTO oper = operatorDTOs[op];
+            if (oper != null)
+            {
+                for (int i = 0; i < oper.address.Count; i++)
+                {
+                    Replica rep = getReplica(oper.address[i]);
+                    //rep.stop();
+                }
 
-        }
-
-        public void freeze(string op)
-        {
-
+            }
         }
 
     };

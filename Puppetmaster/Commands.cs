@@ -56,7 +56,21 @@ namespace DADSTORM
             {
                 Console.WriteLine("[Usage]" + getID() + " operator_id");
             }
-            else print("implement me");//DO something
+            else Shell().start(list[1]);
+        }
+    }
+
+    class StopCommand : Command
+    {
+        public StopCommand(Shell sh) : base(sh, "stop") { }
+
+        public override void execute(string[] list)
+        {
+            if (list.Length != 2)
+            {
+                Console.WriteLine("[Usage]" + getID() + " operator_id");
+            }
+            else Shell().stop(list[1]);
         }
     }
 
