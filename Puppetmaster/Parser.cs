@@ -9,11 +9,11 @@ using System.Collections;
 namespace DADSTORM {
     class Parser {
 
-        public Dictionary<string, OperatorDTO> makeOperatorDTOs(string[] splitFile) {
+        public Dictionary<string, string> makestrings(string[] splitFile) {
             System.Console.WriteLine("Building Operator drafts from previously split file.");
 
             //ArrayList operatorDTOs = new ArrayList();
-            Dictionary<string, OperatorDTO> operatorDTOs = new Dictionary<string, OperatorDTO>();
+            Dictionary<string, string> operatorDTOs = new Dictionary<string, string>();
 
             string id = "placeholder";
             string rep = "placeholder";
@@ -74,7 +74,7 @@ namespace DADSTORM {
                         else {
                             n = i;
                         }
-                        operatorDTOs.Add(id, new OperatorDTO(id, inputs, rep, rout, addr, spec));
+                        //operatorDTOs.Add(id, new string(id, inputs, rep, rout, addr, spec));
                         System.Console.WriteLine("Added new operator draft to ArrayList. Continue?");
                         inputs = new ArrayList();
                         addr = new ArrayList();
