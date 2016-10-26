@@ -1,4 +1,4 @@
-﻿using System;
+﻿    using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Remoting.Channels;
@@ -101,23 +101,6 @@ namespace DADSTORM
             logger = log;
         }
 
-
-        public void setupOperators(Dictionary<string, OperatorDTO> operatorDTOs, Parser parser, Logger log) {
-            log.writeLine("Setting up operators.");
-            //foreach (KeyValuePair<string, OperatorDTO> op in operatorDTOs) {
-            for(int i = 0; i < operatorDTOs.Count; i++) {
-                foreach(string address in operatorDTOs.ElementAt(i).Value.address) {
-                    string pcsAddress = Parser.parseIPFromAddress(address);
-                    pcsAddress = pcsAddress + ":10000/pcs";
-                    System.Console.WriteLine("Contacting {0}", pcsAddress);
-                    ProcessCreationService pcs = (ProcessCreationService)Activator.GetObject(typeof(ProcessCreationService), pcsAddress);
-                    if (pcs == null)
-                        log.writeLine("ERROR: NO PCS SERVER");
-                    pcs.createProcess(operatorDTOs.ElementAt(i).Value);
-                }
-            }
-        }
-
         public void setUpOperators() {
             logger.writeLine("Setting up operators.");
             foreach (OperatorDTO op in operatorDTOs.Values) {
@@ -126,9 +109,10 @@ namespace DADSTORM
         }
 
         public void sendToPCS(OperatorDTO op) {
-            foreach(String replicaAddress in op.address) {
+            for(int i=0; i<op.address.Count; i++) {
                 //logger.writeLine("Reaching PCS at {0} to set up ", PCSaddress, op.op_id);
-                string PCSaddress = Parser.parseIPFromAddress(replicaAddress) + ":10000/pcs";
+                string PCSaddress = Parser.parseIPFromAddress(op.address[i]) + ":10000/pcs";
+                op.currRep = i;
                 createReplica(PCSaddress, op);
             }
         }
@@ -143,6 +127,24 @@ namespace DADSTORM
         public ProcessCreationService getPCS(string PCSaddress, OperatorDTO op) {
             ProcessCreationService pcs = (ProcessCreationService)Activator.GetObject(typeof(ProcessCreationService), PCSaddress);
             return pcs;
+        }
+
+        public void start(string op)
+        {
+            OperatorDTO oper = operatorDTOs[op];
+            if(oper != null)
+                sendToPCS(oper);
+        }
+
+        public void stop(string op)
+        {
+            //who handles destruction? should pcs kill or replica die?
+
+        }
+
+        public void freeze(string op)
+        {
+
         }
 
     };

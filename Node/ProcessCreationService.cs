@@ -20,8 +20,8 @@ namespace DADSTORM
 
         public void createProcess(OperatorDTO op)
         {
-            /*
-            log.writeLine("Creating new Replica Process | id = " + op.op_id + " | port = " + port);
+            
+            log.writeLine("Creating new Replica Process | id = " + op.op_id + " | port = " + op.ports[op.currRep]);
 
             Process p = new Process();
             string t = ReplicaProcess.getPath() + "\\Replica.exe";
@@ -29,14 +29,13 @@ namespace DADSTORM
 
             //Argument order: id , port (...?)
             const string separator = " ";
-            string outputs = string.Join(separator, next);
+            string outputs = string.Join(separator, op.next_op_addresses);
 
-            p.StartInfo.Arguments = op.op_id + " " + port + " " + outputs;
+            p.StartInfo.Arguments = op.op_id + " " + op.ports[op.currRep] + " " + outputs;
 
             p.Start();
 
             log.writeLine("Replica " + op.op_id + " created");
-            */
         }
     }
 }
