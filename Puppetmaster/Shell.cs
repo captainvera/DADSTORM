@@ -4,14 +4,15 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Puppetmaster
+namespace DADSTORM
 {
-    public class Shell
+    class Shell
     {
         private Dictionary<string, Command> _commands = new Dictionary<string, Command>(StringComparer.OrdinalIgnoreCase);
         private string _prompt = ">>";
+        private Puppetmaster _pm;
 
-        public Shell()
+        public Shell(Puppetmaster pm)
         {
             new HelpCommand(this);
             new ExitCommand(this);
@@ -22,6 +23,7 @@ namespace Puppetmaster
             new IntervalCommand(this);
             new StatusCommand(this);
 
+            _pm = pm;
         }
 
         internal void add(Command command)
@@ -55,6 +57,17 @@ namespace Puppetmaster
         {
             Console.WriteLine(txt);
         }
+
+        public void start(string str)
+        {
+            _pm.start(str);
+        }
+
+        public void stop(string str)
+        {
+            _pm.stop(str);
+        }
+
 
     }
 }

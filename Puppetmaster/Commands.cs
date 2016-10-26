@@ -1,8 +1,8 @@
 ﻿using System;
 
-namespace Puppetmaster
+namespace DADSTORM
 {
-    public abstract class Command
+    abstract class Command
     {
         private Shell _sh;
         private string _id;
@@ -33,7 +33,7 @@ namespace Puppetmaster
         public abstract void execute(params string[] list);
     }
 
-    public class HelpCommand : Command
+    class HelpCommand : Command
     {
         public HelpCommand(Shell sh) : base(sh, "help") { }
 
@@ -46,7 +46,7 @@ namespace Puppetmaster
         }
     }
 
-    public class StartCommand : Command
+    class StartCommand : Command
     {
         public StartCommand(Shell sh) : base(sh, "start") { }
 
@@ -60,7 +60,7 @@ namespace Puppetmaster
         }
     }
 
-    public class IntervalCommand : Command
+    class IntervalCommand : Command
     {
         public IntervalCommand(Shell sh) : base(sh, "interval") { }
 
@@ -74,7 +74,7 @@ namespace Puppetmaster
         }
     }
 
-    public class StatusCommand : Command
+    class StatusCommand : Command
     {
         public StatusCommand(Shell sh) : base(sh, "status") { }
 
@@ -88,7 +88,7 @@ namespace Puppetmaster
         }
     }
 
-    public class CrashCommand : Command
+    class CrashCommand : Command
     {
         public CrashCommand(Shell sh) : base(sh, "crash") { }
 
@@ -102,7 +102,7 @@ namespace Puppetmaster
         }
     }
 
-    public class FreezeCommand : Command
+    class FreezeCommand : Command
     {
         public FreezeCommand(Shell sh) : base(sh, "freeze") { }
 
@@ -116,7 +116,7 @@ namespace Puppetmaster
         }
     }
 
-    public class UnfreezeCommand : Command
+    class UnfreezeCommand : Command
     {
         public UnfreezeCommand(Shell sh) : base(sh, "unfreeze") { }
 
@@ -130,7 +130,7 @@ namespace Puppetmaster
         }
     }
 
-    public class ExitCommand : Command
+    class ExitCommand : Command
     {
         public ExitCommand(Shell sh) : base(sh, "exit") { }
 
