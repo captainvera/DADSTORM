@@ -28,12 +28,12 @@ namespace DADSTORM {
             n = i = 0;
 
             while (n < splitFile.Length) {
-                System.Console.WriteLine("\nWord being filtered: {0} - n = {1}", splitFile[n], n);
+                //System.Console.WriteLine("\nWord being filtered: {0} - n = {1}", splitFile[n], n);
                 switch (splitFile[n]) {
                     case "input":
                         i = n + 2;
                         while (!splitFile[i].Equals("rep")) {
-                            System.Console.WriteLine("Operator's input: {0}", splitFile[i]);
+                            //System.Console.WriteLine("Operator's input: {0}", splitFile[i]);
                             inputs.Add(splitFile[i]);
                             i++;
                         }
@@ -41,18 +41,18 @@ namespace DADSTORM {
                         break;
                     case "rep":
                         rep = splitFile[n + 2];
-                        System.Console.WriteLine("Operator rep factor: {0}", rep);
+                        //System.Console.WriteLine("Operator rep factor: {0}", rep);
                         n += 2;
                         break;
                     case "routing":
                         rout = splitFile[n + 1];
-                        System.Console.WriteLine("Operator routing policy: {0}", rout);
+                        //System.Console.WriteLine("Operator routing policy: {0}", rout);
                         n++;
                         break;
                     case "address":
                         i = n + 1;
                         while (!splitFile[i].Equals("operator")) {
-                            System.Console.WriteLine("Adresses: {0}", splitFile[i]);
+                            //System.Console.WriteLine("Adresses: {0}", splitFile[i]);
                             addr.Add(splitFile[i]);
                             port.Add(Parser.parsePortFromAddress(splitFile[i]));
                             i++;
@@ -62,7 +62,7 @@ namespace DADSTORM {
                     case "operator":
                         i = n + 2;
                         while (!splitFile[i].Equals("input")) {
-                            System.Console.WriteLine("Operator spec items: {0}. i = {1}", splitFile[i], i);
+                            //System.Console.WriteLine("Operator spec items: {0}. i = {1}", splitFile[i], i);
                             spec.Add(splitFile[i]);
                             i++;
                             if (i == splitFile.Count()) {
@@ -71,14 +71,14 @@ namespace DADSTORM {
                         }
                         if (i < splitFile.Count()) {
                             spec.RemoveAt(spec.Count - 1);
-                            System.Console.WriteLine("spec array's current last item: {0}", spec[spec.Count - 1]);
+                            //System.Console.WriteLine("spec array's current last item: {0}", spec[spec.Count - 1]);
                             n = i - 2;
                         }
                         else {
                             n = i;
                         }
                         operatorDTOs.Add(id, new OperatorDTO(id, inputs, rep, rout, addr, spec, port));
-                        System.Console.WriteLine("Added new operator draft to ArrayList. Continue?");
+                        //System.Console.WriteLine("Added new operator draft to ArrayList. Continue?");
                         inputs = new List<string>();
                         addr = new List<string>();
                         spec = new List<string>();
@@ -87,8 +87,8 @@ namespace DADSTORM {
                         break;
                     default:
                         id = splitFile[n];
-                        System.Console.WriteLine("New operator with id: {0}", id);
-                        System.Console.WriteLine("Entered default statement.");
+                        //System.Console.WriteLine("New operator with id: {0}", id);
+                        //System.Console.WriteLine("Entered default statement.");
                         break;
                 }
                 n++;
@@ -108,7 +108,7 @@ namespace DADSTORM {
         public string[] readConfigOps() {
 
             string opDef = "";
-            System.IO.StreamReader reader = new System.IO.StreamReader(@"..\..\..\dadstorm.config");
+            System.IO.StreamReader reader = new System.IO.StreamReader(@"..\..\..\test.config");
 
             string line = reader.ReadLine();
             while ((line = reader.ReadLine()) != null) {
@@ -128,7 +128,7 @@ namespace DADSTORM {
 
         public string[] readCommands() {
             List<string> commands = new List<string>();
-            System.IO.StreamReader reader = new System.IO.StreamReader(@"..\..\..\dadstorm.config");
+            System.IO.StreamReader reader = new System.IO.StreamReader(@"..\..\..\test.config");
 
             string line = reader.ReadLine();
             while ((line = reader.ReadLine()) != null) {
@@ -137,7 +137,7 @@ namespace DADSTORM {
             }
             commands.RemoveAll(string.IsNullOrWhiteSpace);
             foreach (string st in commands) {
-                System.Console.WriteLine(st);
+                //System.Console.WriteLine(st);
             }
             return commands.ToArray();
         }

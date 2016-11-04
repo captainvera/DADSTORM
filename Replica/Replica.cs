@@ -16,6 +16,11 @@ namespace DADSTORM
         {
             if(args.Length < 3)
             {
+                for (int i = 0; i < args.Length; i++)
+                {
+                    Console.WriteLine(i + "st arg= " + args[i]);
+                }
+
                 Console.WriteLine("Wrong number of arguments provided, exiting.");
                 Console.ReadLine();
                 Environment.Exit(1);
@@ -115,6 +120,11 @@ namespace DADSTORM
         public string[] getOutputReplicas()
         {
             return output; 
+        }
+
+        public string ping(string value)
+        {
+            return value;
         }
     }
 }

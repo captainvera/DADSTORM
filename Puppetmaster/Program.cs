@@ -4,6 +4,7 @@ using System.Linq;
 using System.Runtime.Remoting.Channels;
 using System.Runtime.Remoting.Channels.Tcp;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Collections;
 
@@ -26,17 +27,11 @@ namespace DADSTORM
             string[] commands =  parser.readCommands();
             Dictionary<string, OperatorDTO> operatorDTOs = parser.makeOperatorDTOs(parser.readConfigOps());
 
-            /* prints to check if DTOs are well formed
-             * TODO - delete
-            System.Console.WriteLine(" OP2.ports[0] : {0}", operatorDTOs["OP2"].ports[0]);
-            System.Console.WriteLine("OP2ports[1]: {0}", operatorDTOs["OP2"].ports[1]);
-            System.Console.WriteLine("OP2.next_op_addresses[0]: {0}", operatorDTOs["OP2"].next_op_addresses[0]);
-            System.Console.WriteLine("OP2.next_op_addresses[1]: {0}", operatorDTOs["OP2"].next_op_addresses[1]);
-            */
-
             log.writeLine("Done");
 
             Puppetmaster pm = new Puppetmaster(operatorDTOs, commands, log);
+
+            pm.setUpOperators();
 
             //Reaching every PCS and sending it the DTOs
             //pm.setupOperators(operatorDTOs, parser, log);
@@ -84,7 +79,12 @@ namespace DADSTORM
                 }
             }
             */
-            Console.ReadLine();
+            System.Threading.Thread.Sleep(10000);
+
+            pm.test();
+
+            Shell sh = new Shell(pm);
+            sh.start();
         }
     }
 
@@ -104,20 +104,22 @@ namespace DADSTORM
         public void setUpOperators() {
             logger.writeLine("Setting up operators.");
             foreach (OperatorDTO op in operatorDTOs.Values) {
-                sendToPCS(op);
+                createOperator(op);
             }
         }
 
-        public void sendToPCS(OperatorDTO op) {
+        public void createOperator(OperatorDTO op) {
+            logger.writeLine("Creating operator " + op.op_id);
             for(int i=0; i<op.address.Count; i++) {
                 //logger.writeLine("Reaching PCS at {0} to set up ", PCSaddress, op.op_id);
                 string PCSaddress = Parser.parseIPFromAddress(op.address[i]) + ":10000/pcs";
-                op.currRep = i;
+                op.curr_rep = i;
                 createReplica(PCSaddress, op);
             }
         }
 
         public void createReplica(string PCSaddress, OperatorDTO op) {
+            logger.writeLine("Creating replica " + op.curr_rep + " for " + op.op_id + " with next address:" + op.next_op_addresses[0]);
             ProcessCreationService pcs = getPCS(PCSaddress, op);
             if (pcs == null)
                 logger.writeLine("Couldn't reach PCS.");
@@ -137,6 +139,7 @@ namespace DADSTORM
 
         public void start(string op)
         {
+            logger.writeLine("start " + op);
             OperatorDTO oper = operatorDTOs[op];
             if (oper != null)
             {
@@ -151,6 +154,7 @@ namespace DADSTORM
 
         public void stop(string op)
         {
+            logger.writeLine("stop " + op);
             OperatorDTO oper = operatorDTOs[op];
             if (oper != null)
             {
@@ -160,6 +164,50 @@ namespace DADSTORM
                     //rep.stop();
                 }
 
+            }
+        }
+
+        public void wait(int time)
+        {
+            logger.writeLine("wait " + time);
+            Thread.Sleep(time);   
+        }
+    
+        public void status()
+        {
+
+            foreach (KeyValuePair<string, OperatorDTO> entry in operatorDTOs)
+            {
+                for (int i = 0; i < entry.Value.address.Count; i++)
+                {
+                    Replica rep = getReplica(entry.Value.address[i]);
+
+                    //TODO: should say actual status (stopped/started/etc)
+                    try
+                    {
+                        if (rep.ping("ping") == "ping")
+                            logger.writeLine("Replica " + i + " of " + entry.Value.op_id + " is alive.");
+                    }
+                    catch (Exception e)
+                    {
+                        //TODO apanhar excepçoes especificas
+                        
+                        logger.writeLine("Replica " + i + " of " + entry.Value.op_id + " is dead.");
+                    }
+
+                }
+            }
+        }
+
+        public void test()
+        {
+            for (int i = 999; i > 0; i--)
+            {
+                Tuple t = new Tuple(1);
+                t.set(0, i + " bottles of beer on the wall, " + i + " bottles of beer, take one down, pass it around you got " + (i - 1) + " bottles of beer on the wall!");
+                Replica rep = getReplica(operatorDTOs["OP1"].address[0]);
+                rep.input(t);
+                System.Threading.Thread.Sleep(100);
             }
         }
 

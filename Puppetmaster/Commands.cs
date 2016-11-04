@@ -56,7 +56,7 @@ namespace DADSTORM
             {
                 Console.WriteLine("[Usage]" + getID() + " operator_id");
             }
-            else Shell().start(list[1]);
+            else Shell().startOP(list[1]);
         }
     }
 
@@ -70,7 +70,7 @@ namespace DADSTORM
             {
                 Console.WriteLine("[Usage]" + getID() + " operator_id");
             }
-            else Shell().stop(list[1]);
+            else Shell().stopOP(list[1]);
         }
     }
 
@@ -98,7 +98,7 @@ namespace DADSTORM
             {
                 Console.WriteLine("[Usage]" + getID() + " command has no arguments");
             }
-            else print("implement me");//DO something
+            else Shell().status();
         }
     }
 
@@ -154,7 +154,26 @@ namespace DADSTORM
             {
                 Console.WriteLine("[Usage]" + getID() + " takes no arguments");
             }
-            else Shell().exit();//DO something
+            else Shell().exit();
+        }
+    }
+
+    class WaitCommand : Command
+    {
+        public WaitCommand(Shell sh) : base(sh, "wait") { }
+
+        public override void execute(string[] list)
+        {
+            if (list.Length != 2)
+            {
+                Console.WriteLine("[Usage]" + getID() + " x_ms");
+            }
+            else {
+                int time = 0;
+                if (Int32.TryParse(list[1], out time) == true)
+                    Shell().wait(time);
+                else Console.WriteLine("[Usage] " + list[1] +" must be an integer");
+            }
         }
     }
 }

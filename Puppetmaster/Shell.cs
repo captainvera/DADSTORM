@@ -22,6 +22,7 @@ namespace DADSTORM
             new CrashCommand(this);
             new IntervalCommand(this);
             new StatusCommand(this);
+            new WaitCommand(this);
 
             _pm = pm;
         }
@@ -58,16 +59,24 @@ namespace DADSTORM
             Console.WriteLine(txt);
         }
 
-        public void start(string str)
+        public void startOP(string str)
         {
             _pm.start(str);
         }
 
-        public void stop(string str)
+        public void stopOP(string str)
         {
             _pm.stop(str);
         }
 
+        public void wait(int time)
+        {
+            _pm.wait(time);
+        }
 
+        public void status()
+        {
+            _pm.status();
+        }
     }
 }
