@@ -96,19 +96,31 @@ namespace DADSTORM {
             System.Console.WriteLine("Drafts all done.");
 
             //setting DTO's next_op_addresses parameter
-            for (int j = 0; j < operatorDTOs.Count - 2; j++) {
+            setNextOperatorAddress(operatorDTOs);
+
+            /*            for (int j = 0; j < operatorDTOs.Count - 2; j++) {
                 operatorDTOs.ElementAt(j).Value.next_op_addresses = operatorDTOs.ElementAt(j + 1).Value.address;
             }
             operatorDTOs.ElementAt(operatorDTOs.Count - 1).Value.next_op_addresses = new List<string> { "X" };
-            
+             */
 
             return operatorDTOs;
+        }
+
+        public void setNextOperatorAddress(Dictionary<string, OperatorDTO> opDTOs) {
+            foreach (OperatorDTO op in opDTOs.Values) {
+                foreach (string input in op.input_ops) {
+                    if (input.StartsWith("OP")) {
+                        opDTOs[input].next_op_addresses = opDTOs[input].next_op_addresses.Concat(op.address).ToList();
+                    }
+                }
+            }
         }
 
         public string[] readConfigOps() {
 
             string opDef = "";
-            System.IO.StreamReader reader = new System.IO.StreamReader(@"..\..\..\test.config");
+            System.IO.StreamReader reader = new System.IO.StreamReader(@"..\..\..\dadstorm.config");
 
             string line = reader.ReadLine();
             while ((line = reader.ReadLine()) != null) {
@@ -128,7 +140,7 @@ namespace DADSTORM {
 
         public string[] readCommands() {
             List<string> commands = new List<string>();
-            System.IO.StreamReader reader = new System.IO.StreamReader(@"..\..\..\test.config");
+            System.IO.StreamReader reader = new System.IO.StreamReader(@"..\..\..\dadstorm.config");
 
             string line = reader.ReadLine();
             while ((line = reader.ReadLine()) != null) {
