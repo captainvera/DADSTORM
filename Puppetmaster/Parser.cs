@@ -98,11 +98,7 @@ namespace DADSTORM {
             //setting DTO's next_op_addresses parameter
             setNextOperatorAddress(operatorDTOs);
 
-            /*            for (int j = 0; j < operatorDTOs.Count - 2; j++) {
-                operatorDTOs.ElementAt(j).Value.next_op_addresses = operatorDTOs.ElementAt(j + 1).Value.address;
-            }
-            operatorDTOs.ElementAt(operatorDTOs.Count - 1).Value.next_op_addresses = new List<string> { "X" };
-             */
+            operatorDTOs.Last().Value.next_op_addresses.Add("X");    
 
             return operatorDTOs;
         }

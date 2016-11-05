@@ -79,12 +79,16 @@ namespace DADSTORM
                 }
             }
             */
-            System.Threading.Thread.Sleep(10000);
+
+            Shell sh = new Shell(pm);
+            //Want the script to be executed? uncomment following line
+            //sh.start(commands);
+
+            sh.start();
+
 
             pm.test();
 
-            Shell sh = new Shell(pm);
-            sh.start();
         }
     }
 
@@ -108,7 +112,7 @@ namespace DADSTORM
             }
         }
 
-        public void createOperator(OperatorDTO op) {
+        private void createOperator(OperatorDTO op) {
             logger.writeLine("Creating operator " + op.op_id);
             for(int i=0; i<op.address.Count; i++) {
                 //logger.writeLine("Reaching PCS at {0} to set up ", PCSaddress, op.op_id);
@@ -118,23 +122,41 @@ namespace DADSTORM
             }
         }
 
-        public void createReplica(string PCSaddress, OperatorDTO op) {
-            logger.writeLine("Creating replica " + op.curr_rep + " for " + op.op_id + " with next address:" + op.next_op_addresses[0]);
+        private void createReplica(string PCSaddress, OperatorDTO op) {
+            if(op.next_op_addresses[0] != "X")
+                logger.writeLine("Creating replica " + op.curr_rep + " for " + op.op_id + " with next address:" + op.next_op_addresses[0]);
+            else logger.writeLine("Creating replica " + op.curr_rep + " for " + op.op_id + ". This operator is final.");
+
             ProcessCreationService pcs = getPCS(PCSaddress, op);
             if (pcs == null)
                 logger.writeLine("Couldn't reach PCS.");
             pcs.createProcess(op);
         }
 
-        public ProcessCreationService getPCS(string PCSaddress, OperatorDTO op) {
+        private ProcessCreationService getPCS(string PCSaddress, OperatorDTO op) {
             ProcessCreationService pcs = (ProcessCreationService)Activator.GetObject(typeof(ProcessCreationService), PCSaddress);
             return pcs;
         }
 
-        public Replica getReplica(string address)
+        private Replica getReplica(string address)
         {
             Replica rep = (Replica)Activator.GetObject(typeof(Replica), address);
             return rep;
+        }
+
+        private List<Replica> getReplicas(OperatorDTO op)
+        {
+            List<Replica> result = new List<Replica>();
+            if (op != null)
+            {
+                for (int i = 0; i < op.address.Count; i++)
+                {
+                    result.Add(getReplica(op.address[i]));
+                }
+            }
+            else logger.writeLine("getReplicas FAILED because Operator was NULL");
+
+            return result;
         }
 
         public void start(string op)
@@ -143,9 +165,9 @@ namespace DADSTORM
             OperatorDTO oper = operatorDTOs[op];
             if (oper != null)
             {
-                for (int i = 0; i < oper.address.Count; i++)
+                foreach(Replica rep in getReplicas(oper))
                 {
-                    Replica rep = getReplica(oper.address[i]);
+                    rep.ping("IS TIME TO GO");
                     //rep.start();
                 }
 
@@ -158,9 +180,9 @@ namespace DADSTORM
             OperatorDTO oper = operatorDTOs[op];
             if (oper != null)
             {
-                for (int i = 0; i < oper.address.Count; i++)
+                foreach (Replica rep in getReplicas(oper))
                 {
-                    Replica rep = getReplica(oper.address[i]);
+                    rep.ping("IS TIME TO STAHP");
                     //rep.stop();
                 }
 
@@ -170,7 +192,7 @@ namespace DADSTORM
         public void wait(int time)
         {
             logger.writeLine("wait " + time);
-            Thread.Sleep(time);   
+            Thread.Sleep(time);
         }
     
         public void status()
@@ -181,7 +203,7 @@ namespace DADSTORM
                 for (int i = 0; i < entry.Value.address.Count; i++)
                 {
                     Replica rep = getReplica(entry.Value.address[i]);
-
+                    if (rep == null) logger.writeLine("ABORT ABORT");
                     //TODO: should say actual status (stopped/started/etc)
                     try
                     {
@@ -196,6 +218,59 @@ namespace DADSTORM
                     }
 
                 }
+            }
+        }
+
+
+        public void interval(string op, int time)
+        {
+            logger.writeLine("interval " + op);
+            OperatorDTO oper = operatorDTOs[op];
+            if (oper != null)
+            {
+                foreach (Replica rep in getReplicas(oper))
+                {
+                    rep.ping("Recess time is:" + time);
+                    //rep.interval(time); 
+                }
+
+            }
+        }
+
+        public void crash(string op, int rep)
+        {
+            logger.writeLine("crash " + op + "." + rep);
+
+            OperatorDTO oper = operatorDTOs[op];
+            if(oper != null)
+            {
+                getReplica(oper.address[rep]).ping("Crash and burn");
+                //getReplica(oper.address[rep]).crash();
+            }
+
+        }
+
+        public void freeze(string op, int rep)
+        {
+            logger.writeLine("freeze " + op + "." + rep);
+
+            OperatorDTO oper = operatorDTOs[op];
+            if (oper != null)
+            {
+                getReplica(oper.address[rep]).ping("Frostnova");
+                //getReplica(oper.address[rep]).freeze();
+            }
+        }
+
+        public void unfreeze(string op, int rep)
+        {
+            logger.writeLine("unfreeze " + op + "." + rep);
+
+            OperatorDTO oper = operatorDTOs[op];
+            if (oper != null)
+            {
+                getReplica(oper.address[rep]).ping("Melt");
+                //getReplica(oper.address[rep]).freeze();
             }
         }
 

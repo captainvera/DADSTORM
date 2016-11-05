@@ -84,7 +84,12 @@ namespace DADSTORM
             {
                 Console.WriteLine("[Usage]" + getID() + " operator_id x_ms");
             }
-            else print("implement me");//DO something
+            else {
+                int time = 0;
+                if (Int32.TryParse(list[2], out time) == true)
+                    Shell().interval(list[1], time);
+                else Console.WriteLine("[Usage] " + list[2] + " must be an integer");
+            }
         }
     }
 
@@ -108,7 +113,7 @@ namespace DADSTORM
 
         public override void execute(string[] list)
         {
-            if (list.Length != 2)   
+            if (list.Length != 3)   
             {
                 Console.WriteLine("[Usage]" + getID() + " process_name");
             }
@@ -122,11 +127,16 @@ namespace DADSTORM
 
         public override void execute(string[] list)
         {
-            if (list.Length != 2)
+            if (list.Length != 3)
             {
                 Console.WriteLine("[Usage]" + getID() + " process_name");
             }
-            else print("implement me");//DO something
+            else {
+                int time = 0;
+                if (Int32.TryParse(list[2], out time) == true)
+                    Shell().interval(list[1], time);
+                else Console.WriteLine("[Usage] " + list[2] + " must be an integer");
+            }
         }
     }
 
@@ -136,7 +146,7 @@ namespace DADSTORM
 
         public override void execute(string[] list)
         {
-            if (list.Length != 2)
+            if (list.Length != 3)
             {
                 Console.WriteLine("[Usage]" + getID() + " process_name");
             }

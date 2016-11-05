@@ -32,21 +32,37 @@ namespace DADSTORM
             _commands.Add(command.getID(), command);
         }
 
+        public void start(string[] commands)
+        {
+            foreach(string cmd in commands)
+            {
+                processCommand(cmd);
+            }
+
+            start();
+        }
+
         public void start()
         {
             string str;
             Console.Write(_prompt);
             while ((str = Console.ReadLine()) != null)
             {
-                String[] args = str.Split(' ');
-                Command c;
-                _commands.TryGetValue(args[0], out c);
-                if(c != null)
-                {
-                    c.execute(args);
-                }
+                processCommand(str);
                 Console.Write(_prompt);
             }
+        }
+
+        private void processCommand(string command)
+        {
+            String[] args = command.Split(' ');
+            Command c;
+            _commands.TryGetValue(args[0], out c);
+            if (c != null)
+            {
+                c.execute(args);
+            }
+
         }
 
         public void exit()
@@ -77,6 +93,26 @@ namespace DADSTORM
         public void status()
         {
             _pm.status();
+        }
+
+        public void interval(string op, int time)
+        {
+            _pm.interval(op, time);
+        }
+
+        public void crash(string op, int replica)
+        {
+            _pm.crash(op, replica);
+        }
+
+        public void freeze(string op, int replica)
+        {
+            _pm.freeze(op, replica);
+        }
+
+        public void unfreeze(string op, int replica)
+        {
+            _pm.unfreeze(op, replica);
         }
     }
 }

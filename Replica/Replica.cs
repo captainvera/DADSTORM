@@ -18,9 +18,9 @@ namespace DADSTORM
             {
                 for (int i = 0; i < args.Length; i++)
                 {
-                    Console.WriteLine(i + "st arg= " + args[i]);
+                    Console.WriteLine(i + "th arg= " + args[i]);
                 }
-
+                
                 Console.WriteLine("Wrong number of arguments provided, exiting.");
                 Console.ReadLine();
                 Environment.Exit(1);
