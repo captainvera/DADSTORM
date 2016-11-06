@@ -126,5 +126,10 @@ namespace DADSTORM
         {
             return value;
         }
+
+        override public object InitializeLifetimeService()
+        {
+            return null;
+        }
     }
 }

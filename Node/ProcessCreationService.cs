@@ -37,5 +37,10 @@ namespace DADSTORM
 
             log.writeLine("Replica " + op.op_id + " created");
         }
+
+        override public object InitializeLifetimeService()
+        {
+            return null;
+        }
     }
 }
