@@ -134,7 +134,7 @@ namespace DADSTORM
             else {
                 int time = 0;
                 if (Int32.TryParse(list[2], out time) == true)
-                    Shell().interval(list[1], time);
+                    Shell().freeze(list[1], time);
                 else Console.WriteLine("[Usage] " + list[2] + " must be an integer");
             }
         }
@@ -150,7 +150,13 @@ namespace DADSTORM
             {
                 Console.WriteLine("[Usage]" + getID() + " process_name");
             }
-            else print("implement me");//DO something
+            else
+            {
+                int time = 0;
+                if (Int32.TryParse(list[2], out time) == true)
+                    Shell().unfreeze(list[1], time);
+                else Console.WriteLine("[Usage] " + list[2] + " must be an integer");
+            }
         }
     }
 

@@ -46,7 +46,8 @@ namespace DADSTORM
             ChannelServices.RegisterChannel(channel, false);
 
             Replica rep = new Replica(id, port.Replace("10", "11"), outputs.ToArray());
-            RemotingServices.Marshal(rep, name, typeof(Replica));
+            RemotingServices.Marshal(rep, "op", typeof(Replica));
+            Logger.writeLine("Registered with name:" + name, "ReplicaProcess");
 
             Console.ReadLine();
         }
@@ -124,6 +125,7 @@ namespace DADSTORM
 
         public string ping(string value)
         {
+            log.writeLine("ping: " + value);
             return value;
         }
 

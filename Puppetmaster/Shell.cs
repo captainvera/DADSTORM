@@ -11,6 +11,7 @@ namespace DADSTORM
         private Dictionary<string, Command> _commands = new Dictionary<string, Command>(StringComparer.OrdinalIgnoreCase);
         private string _prompt = ">>";
         private Puppetmaster _pm;
+        private bool exitbool;
 
         public Shell(Puppetmaster pm)
         {
@@ -49,6 +50,8 @@ namespace DADSTORM
             while ((str = Console.ReadLine()) != null)
             {
                 processCommand(str);
+                if (exitbool == true)
+                    break;
                 Console.Write(_prompt);
             }
         }
@@ -67,7 +70,7 @@ namespace DADSTORM
 
         public void exit()
         {
-            Environment.Exit(0);
+            exitbool = true;
         }
 
         public void print(string txt)

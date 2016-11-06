@@ -1,4 +1,4 @@
-﻿    using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Remoting.Channels;
@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using System.Collections;
 
 using Tuple = DADSTORM.Tuple;
+using System.Runtime.Remoting;
 
 namespace DADSTORM
 {
@@ -18,6 +19,8 @@ namespace DADSTORM
 
         static void Main(string[] args)
         {
+            int port = 10001;
+
             log = new Logger("PupperMaster");
             log.writeLine("Starting Puppetmaster");
             log.writeLine("Parsing configuration file");
@@ -25,11 +28,29 @@ namespace DADSTORM
             Parser parser = new Parser();
 
             string[] commands =  parser.readCommands();
-            Dictionary<string, OperatorDTO> operatorDTOs = parser.makeOperatorDTOs(parser.readConfigOps());
 
+            log.writeLine("commands:");
+            foreach (string str in commands)
+                Console.WriteLine(str);
+
+            Dictionary<string, OperatorDTO> operatorDTOs = parser.makeOperatorDTOs(parser.readConfigOps());
             log.writeLine("Done");
 
+            Console.WriteLine("What is the current IP address of the puppetmaster?");
+            string ip = Console.ReadLine();
+
+            ip = string.Concat("tcp://", ip, ":", port, "/pm");
+
+            log.writeLine("Current ip:" + ip);
+
             Puppetmaster pm = new Puppetmaster(operatorDTOs, commands, log);
+
+
+            TcpChannel channel = new TcpChannel(port);
+            log.writeLine("PuppetMaster on port:" + port);
+
+            ChannelServices.RegisterChannel(channel, false);
+            RemotingServices.Marshal(pm, "pm", typeof(Puppetmaster));
 
             pm.setUpOperators();
 
@@ -202,6 +223,7 @@ namespace DADSTORM
             {
                 for (int i = 0; i < entry.Value.address.Count; i++)
                 {
+                    logger.writeLine("Getting replica with address:" + entry.Value.address[i]);
                     Replica rep = getReplica(entry.Value.address[i]);
                     if (rep == null) logger.writeLine("ABORT ABORT");
                     //TODO: should say actual status (stopped/started/etc)
@@ -213,7 +235,6 @@ namespace DADSTORM
                     catch (Exception e)
                     {
                         //TODO apanhar excepçoes especificas
-                        
                         logger.writeLine("Replica " + i + " of " + entry.Value.op_id + " is dead.");
                     }
 
@@ -287,4 +308,24 @@ namespace DADSTORM
         }
 
     };
+
+    class PupperMasterListener : MarshalByRefObject
+    {
+        private static Logger log;
+
+        public PupperMasterListener(Logger _log)
+        {
+            log = _log;
+        }
+
+        public void writeLine(string str)
+        {
+            log.writeLine(str);
+        }
+
+        public void write(string str)
+        {
+            log.write(str);
+        }
+    }
 }
