@@ -7,57 +7,51 @@ using System.Runtime.Remoting.Channels.Tcp;
 using System.Runtime.Remoting.Channels;
 using System.Runtime.Remoting;
 using System.Collections;
+using System.Xml.Serialization;
+using System.IO;
 
-namespace DADSTORM
-{
-    public class ReplicaProcess
-    {
-        public static void Main(string[] args)
-        {
-            if(args.Length < 3)
-            {
-                for (int i = 0; i < args.Length; i++)
-                {
-                    Console.WriteLine(i + "th arg= " + args[i]);
-                }
-                
+namespace DADSTORM {
+    public class ReplicaProcess {
+        public static void Main(string[] args) {
+            if (args.Length < 1) {
                 Console.WriteLine("Wrong number of arguments provided, exiting.");
                 Console.ReadLine();
                 Environment.Exit(1);
             }
+            string dtoXml = args[0];
 
-            string id = args[0];
-            string port = args[1];
-            List<string> outputs = new List<string>();
+            OperatorDTO op = Deserialize((string)dtoXml);
 
-            //This are our output replicas!
-            for(int i = 2; i < args.Length; i++)
-            {
-                outputs.Add(args[i]);
-            }
-
-            Logger.writeLine("Processed " + outputs.Count + " output replicas", "ReplicaProcess");
+            Logger.writeLine("Processed " + op.next_op_addresses.Count + " output replicas", "ReplicaProcess");
 
             //Might need proper implementation for naming: CHECK PROJ INSTR
-            string name = "Replica" + id;
+            string id = op.op_id;
+            string name = "Replica" + op.op_id;
+            string port = op.ports[op.curr_rep];
+            string[] nextOperators = op.next_op_addresses.ToArray();
 
 
             TcpChannel channel = new TcpChannel(Int32.Parse(port));
             ChannelServices.RegisterChannel(channel, false);
 
-            Replica rep = new Replica(id, port.Replace("10", "11"), outputs.ToArray());
+            Replica rep = new Replica(id, port.Replace("10", "11"), nextOperators);
+
             RemotingServices.Marshal(rep, "op", typeof(Replica));
             Logger.writeLine("Registered with name:" + name, "ReplicaProcess");
 
             Console.ReadLine();
         }
 
-        public static String getPath()
-        {
+        public static String getPath() {
             return Environment.CurrentDirectory;
         }
-    }
 
+        public static OperatorDTO Deserialize<OperatorDTO>(string opXml) {
+            XmlSerializer xmlSerializer = new XmlSerializer(typeof(OperatorDTO));
+            StringReader textReader = new StringReader(opXml);
+            return (OperatorDTO)xmlSerializer.Deserialize(textReader);
+        }
+}
     //Should we have a broker between replica process and replica?
     public class Replica : MarshalByRefObject
     {
