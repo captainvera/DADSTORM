@@ -1,15 +1,14 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Remoting;
 using System.Runtime.Remoting.Channels;
 using System.Runtime.Remoting.Channels.Tcp;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Collections;
-
 using Tuple = DADSTORM.Tuple;
-using System.Runtime.Remoting;
 
 namespace DADSTORM
 {
@@ -21,7 +20,9 @@ namespace DADSTORM
         {
             int port = 10001;
 
-            log = new Logger("PupperMaster");
+            
+
+            log = new Logger("PuppetMaster");
             log.writeLine("Starting Puppetmaster");
             log.writeLine("Parsing configuration file");
             
@@ -29,77 +30,34 @@ namespace DADSTORM
 
             string[] commands =  parser.readCommands();
 
-            log.writeLine("commands:");
+            Console.WriteLine("commands:");
             foreach (string str in commands)
                 Console.WriteLine(str);
 
             Dictionary<string, OperatorDTO> operatorDTOs = parser.makeOperatorDTOs(parser.readConfigOps());
             log.writeLine("Done");
 
+            //TODO put something on config file
             Console.WriteLine("What is the current IP address of the puppetmaster?");
             string ip = Console.ReadLine();
 
-            ip = string.Concat("tcp://", ip, ":", port, "/pm");
+            ip = string.Concat("tcp://", ip, ":", port, "/pml");
 
             log.writeLine("Current ip:" + ip);
 
-            Puppetmaster pm = new Puppetmaster(operatorDTOs, commands, log);
+            PuppetmasterListener pml = new PuppetmasterListener(log);
 
 
             TcpChannel channel = new TcpChannel(port);
             log.writeLine("PuppetMaster on port:" + port);
 
             ChannelServices.RegisterChannel(channel, false);
-            RemotingServices.Marshal(pm, "pm", typeof(Puppetmaster));
+            RemotingServices.Marshal(pml, "pml", typeof(PuppetmasterListener));
+
+
+            Puppetmaster pm = new Puppetmaster(operatorDTOs, log);
 
             pm.setUpOperators();
-
-            //Reaching every PCS and sending it the DTOs
-            //pm.setupOperators(operatorDTOs, parser, log);
-
-            /*
-            TcpChannel channel = new TcpChannel();
-            ChannelServices.RegisterChannel(channel, false);
-            
-            //Get physical node pcs
-            log.writeLine("Creating Replica");
-            ProcessCreationService pcs = (ProcessCreationService)Activator.GetObject(
-                typeof(ProcessCreationService), "tcp://localhost:10000/pcs");
-
-            if (pcs == null)
-                log.writeLine("ERROR: NO PCS SERVER");
-            
-            //Remotely create process in node
-            pcs.createProcess("1", "10011", new string[]{"tcp://localhost:10012/Replica2"});
-            pcs.createProcess("2", "10012", new string[]{"tcp://localhost:10013/Replica3"});
-            pcs.createProcess("3", "10013", new string[]{"tcp://localhost:10014/Replica4"});
-            pcs.createProcess("4", "10014", new string[]{"tcp://localhost:10015/Replica5"});
-            pcs.createProcess("5", "10015", new string[]{"tcp://localhost:10016/Replica6"});
-            pcs.createProcess("6", "10016", new string[]{"tcp://localhost:10017/Replica7"});
-            pcs.createProcess("7", "10017", new string[]{"tcp://localhost:10018/Replica8"});
-            pcs.createProcess("8", "10018", new string[]{"tcp://localhost:10019/Replica9"});
-            pcs.createProcess("9", "10019", new string[]{"X"});
-
-            System.Threading.Thread.Sleep(1000);
-
-            //Connect to created replica;
-            log.writeLine("Trying to connect to replica");
-            Replica rb = (Replica)Activator.GetObject(typeof(Replica),
-                "tcp://localhost:10011/Replica1");
-            log.writeLine("Done");
-            if (rb == null)
-                log.writeLine("ERROR: NO SERVER");
-            else
-            {
-                for (int i = 999; i > 0; i--)
-                {
-                    Tuple t = new Tuple(1);
-                    t.set(0, i + " bottles of beer on the wall, " + i + " bottles of beer, take one down, pass it around you got " + (i-1) + " bottles of beer on the wall!");
-                    rb.input(t);
-                    System.Threading.Thread.Sleep(100);
-                }
-            }
-            */
 
             Shell sh = new Shell(pm);
             //Want the script to be executed? uncomment following line
@@ -107,6 +65,11 @@ namespace DADSTORM
 
             sh.start();
 
+            log.writeLine("shell stopped");
+            System.Threading.Thread.Sleep(10000);
+
+            log.writeLine("shell restarted");
+            sh.start(commands);
 
             pm.test();
 
@@ -117,12 +80,9 @@ namespace DADSTORM
 
         Logger logger;
         public Dictionary<string, OperatorDTO> operatorDTOs;
-        public string[] commands;
 
-
-        public Puppetmaster(Dictionary<string, OperatorDTO> opDTOs, string[] cmnds, Logger log) {
+        public Puppetmaster(Dictionary<string, OperatorDTO> opDTOs, Logger log) {
             operatorDTOs = opDTOs;
-            commands = cmnds;
             logger = log;
         }
 
@@ -151,7 +111,13 @@ namespace DADSTORM
             ProcessCreationService pcs = getPCS(PCSaddress, op);
             if (pcs == null)
                 logger.writeLine("Couldn't reach PCS.");
-            pcs.createProcess(op);
+            try { 
+                pcs.createProcess(op);
+            }
+            catch (System.Net.Sockets.SocketException e)
+            {
+                logger.writeLine("Couldn't reach PCS with address:" + PCSaddress + ".");
+            }
         }
 
         private ProcessCreationService getPCS(string PCSaddress, OperatorDTO op) {
@@ -180,16 +146,37 @@ namespace DADSTORM
             return result;
         }
 
+        private OperatorDTO getOperator(string op)
+        {
+            OperatorDTO oper = null;
+            try
+            {
+                oper = operatorDTOs[op];
+            } catch (System.Collections.Generic.KeyNotFoundException e)
+            {
+                logger.writeLine("Operator: " + op + " does not exist.");
+            }
+
+
+            return oper;
+        }
+
         public void start(string op)
         {
             logger.writeLine("start " + op);
-            OperatorDTO oper = operatorDTOs[op];
+            OperatorDTO oper = getOperator(op);
             if (oper != null)
             {
                 foreach(Replica rep in getReplicas(oper))
                 {
-                    rep.ping("IS TIME TO GO");
-                    //rep.start();
+                    try { 
+                        rep.ping("IS TIME TO GO");
+                        //rep.start();
+                    }
+                    catch (System.Net.Sockets.SocketException e)
+                    {
+                        logger.writeLine(oper.op_id + " has an unreachable replica.");
+                    }
                 }
 
             }
@@ -198,12 +185,19 @@ namespace DADSTORM
         public void stop(string op)
         {
             logger.writeLine("stop " + op);
-            OperatorDTO oper = operatorDTOs[op];
+            OperatorDTO oper = getOperator(op);
             if (oper != null)
             {
                 foreach (Replica rep in getReplicas(oper))
                 {
-                    rep.ping("IS TIME TO STAHP");
+                    try
+                    {
+                        rep.ping("IS TIME TO STAHP");
+                    }
+                    catch (System.Net.Sockets.SocketException e)
+                    {
+                        logger.writeLine("OP" + oper.op_id + " has an unreachable replica.");
+                    }
                     //rep.stop();
                 }
 
@@ -246,14 +240,20 @@ namespace DADSTORM
         public void interval(string op, int time)
         {
             logger.writeLine("interval " + op);
-            OperatorDTO oper = operatorDTOs[op];
+            OperatorDTO oper = getOperator(op);
             if (oper != null)
             {
                 foreach (Replica rep in getReplicas(oper))
                 {
+                try { 
                     rep.ping("Recess time is:" + time);
                     //rep.interval(time); 
                 }
+                    catch (System.Net.Sockets.SocketException e)
+                {
+                    logger.writeLine(oper.op_id + " has an unreachable replica.");
+                }
+            }
 
             }
         }
@@ -262,11 +262,17 @@ namespace DADSTORM
         {
             logger.writeLine("crash " + op + "." + rep);
 
-            OperatorDTO oper = operatorDTOs[op];
+            OperatorDTO oper = getOperator(op);
             if(oper != null)
             {
-                getReplica(oper.address[rep]).ping("Crash and burn");
-                //getReplica(oper.address[rep]).crash();
+                try { 
+                    getReplica(oper.address[rep]).ping("Crash and burn");
+                    //getReplica(oper.address[rep]).crash();
+                }
+                    catch (System.Net.Sockets.SocketException e)
+                {
+                    logger.writeLine(oper.op_id + " replica " + rep + " is unreachable.");
+                }
             }
 
         }
@@ -275,11 +281,18 @@ namespace DADSTORM
         {
             logger.writeLine("freeze " + op + "." + rep);
 
-            OperatorDTO oper = operatorDTOs[op];
+            OperatorDTO oper = getOperator(op);
             if (oper != null)
             {
-                getReplica(oper.address[rep]).ping("Frostnova");
-                //getReplica(oper.address[rep]).freeze();
+                try
+                {
+                    getReplica(oper.address[rep]).ping("Frostnova");
+                    //getReplica(oper.address[rep]).freeze();
+                }
+                catch (System.Net.Sockets.SocketException e)
+                {
+                    logger.writeLine(oper.op_id + " replica " + rep + " is unreachable.");
+                }
             }
         }
 
@@ -287,11 +300,19 @@ namespace DADSTORM
         {
             logger.writeLine("unfreeze " + op + "." + rep);
 
-            OperatorDTO oper = operatorDTOs[op];
+            OperatorDTO oper = getOperator(op);
             if (oper != null)
             {
-                getReplica(oper.address[rep]).ping("Melt");
-                //getReplica(oper.address[rep]).freeze();
+                try
+                {
+                    getReplica(oper.address[rep]).ping("Melt");
+                    //getReplica(oper.address[rep]).freeze();
+                }
+                catch (System.Net.Sockets.SocketException e)
+                {
+
+                    logger.writeLine(oper.op_id + " replica " + rep + " is unreachable.");
+                }
             }
         }
 
@@ -309,11 +330,11 @@ namespace DADSTORM
 
     };
 
-    class PupperMasterListener : MarshalByRefObject
+    class PuppetmasterListener : MarshalByRefObject
     {
         private static Logger log;
 
-        public PupperMasterListener(Logger _log)
+        public PuppetmasterListener(Logger _log)
         {
             log = _log;
         }

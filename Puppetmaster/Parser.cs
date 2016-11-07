@@ -10,6 +10,10 @@ using System.Text.RegularExpressions;
 namespace DADSTORM {
     class Parser {
 
+        //safe defaults
+        string logging = "light";
+        string semantics = "at-most-once";
+
         public Dictionary<string, OperatorDTO> makeOperatorDTOs(string[] splitFile) {
             System.Console.WriteLine("Building Operator drafts from previously split file.");
 
@@ -98,7 +102,38 @@ namespace DADSTORM {
             //setting DTO's next_op_addresses parameter
             setNextOperatorAddress(operatorDTOs);
 
-            operatorDTOs.Last().Value.next_op_addresses.Add("X");    
+            operatorDTOs.Last().Value.next_op_addresses.Add("X");
+
+            //setting logging level and semantics
+            string[] commands = readCommands();
+            
+            //TODO safe defaults not implemented
+            foreach (string str in commands)
+            {
+                string[] splt = str.Split(' ');
+
+                if (splt[0] == "LoggingLevel")
+                {
+                    if (splt[1] == "light" || splt[1] == "full")
+                    {
+                        foreach (KeyValuePair<string, OperatorDTO> op in operatorDTOs)
+                            op.Value.logging = splt[1];
+
+                        Logger.writeLine("Logging: " + splt[1], "Puppetmaster");
+                    }
+                }
+                else if (splt[0] == "Semantics")
+                    {
+                    if (splt[1] == "at-most-once" || splt[1] == "at-least-once" || splt[1] == "exactly-once")
+                    {
+                        foreach (KeyValuePair<string, OperatorDTO> op in operatorDTOs)
+                            op.Value.semantics = splt[1];
+
+                        Logger.writeLine("Semantics: " + splt[1], "Puppetmaster");
+
+                    }
+                }
+            }
 
             return operatorDTOs;
         }

@@ -16,6 +16,8 @@ namespace DADSTORM
         public List<string> op_spec = new List<string>();
         public List<string> next_op_addresses = new List<string>();
         public int curr_rep;
+        public string logging;
+        public string semantics;
 
         public OperatorDTO(string id, List<string> inputs, string rep, string rout, List<string> addr, List<string> spec, List<string> port)
         {
