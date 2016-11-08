@@ -7,6 +7,7 @@ using System.Runtime.Remoting.Channels.Tcp;
 using System.Runtime.Remoting.Channels;
 using System.Runtime.Remoting;
 using System.Collections;
+using System.Collections.Concurrent;
 
 namespace DADSTORM
 {
@@ -36,12 +37,17 @@ namespace DADSTORM
             //Might need proper implementation for naming: CHECK PROJ INSTR
             string name = "Replica" + id;
 
+            IDictionary propBag = new Hashtable();
+            propBag["port"] = Int32.Parse(port);
+            propBag["name"] = "tcpClientServer";  // here enter unique channel name
 
-            TcpChannel channel = new TcpChannel(Int32.Parse(port));
+            TcpChannel channel = new TcpChannel(propBag, new BinaryClientFormatterSinkProvider(), new BinaryServerFormatterSinkProvider());
             ChannelServices.RegisterChannel(channel, false);
 
             Replica rep = new Replica(id, port.Replace("10", "11"), outputs.ToArray());
             RemotingServices.Marshal(rep, name, typeof(Replica));
+
+            rep.process();
 
             Console.ReadLine();
         }
@@ -57,14 +63,16 @@ namespace DADSTORM
     {
         private Logger log;
 
+        OperatorWorkerPool op_pool;
+        BlockingCollection<Tuple> input_buffer;
+        BlockingCollection<Tuple> output_buffer;
+
         private string id, port;
         private string[] output;
         private Boolean primary;
 
         private IOperator op;
         private IRoutingStrategy router;
-
-        private TcpChannel channel;
 
         public Replica(string _id, string _port, string[] _next)
         {
@@ -75,30 +83,35 @@ namespace DADSTORM
             output = _next;
 
             log = new Logger("Replica" + id);
-
-            //Routing Strategy for this replica
             router = new PrimaryRoutingStrategy(this);
             op = new DUP();
 
-            log.writeLine("Initialized Replica " + id + " with out port " + port);
+            input_buffer = new BlockingCollection<Tuple>();
+            output_buffer = new BlockingCollection<Tuple>();
+            op_pool = new OperatorWorkerPool(4, op, input_buffer, output_buffer);
 
-            //Client TCP Channel to connect with other replicas
-            //Fix Int32 parse -> more security plz
-            IDictionary propBag = new Hashtable(); 
-            propBag["port"] = Int32.Parse(port);
-            propBag["name"] = "tcpOut";  // here enter unique channel name
-
-            channel = new TcpChannel(propBag, new BinaryClientFormatterSinkProvider(), null);
-            ChannelServices.RegisterChannel(channel, false);
-
+            op_pool.start();
             log.writeLine("Replica " + id + " is now online");
         }
 
         public void input(Tuple t)
         {
-            log.writeLine("Received input: " + t.get(0));
-            Tuple res = op.process(t);
-            router.route(res);
+            //log.writeLine("Received input: " + t.get(0));
+            //Tuple res = op.process(t);
+            //router.route(res);
+            log.writeLine("Got input");
+            input_buffer.Add(t);
+        }
+
+        public void process()
+        {
+            Tuple data;
+            while (true)
+            {
+                data = output_buffer.Take();
+                log.writeLine("Sending tuple");
+                router.route(data);
+            }
         }
 
         //private??
@@ -116,6 +129,16 @@ namespace DADSTORM
         public string[] getOutputReplicas()
         {
             return output; 
+        }
+
+        public void freeze()
+        {
+            op_pool.freezeAll(); 
+        }
+
+        public void unfreeze()
+        {
+            op_pool.unfreezeAll(); 
         }
     }
 }
