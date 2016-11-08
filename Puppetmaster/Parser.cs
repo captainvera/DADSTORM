@@ -7,15 +7,17 @@ using System.Collections;
 using System.Text.RegularExpressions;
 
 
-namespace DADSTORM {
-    class Parser {
-
+namespace DADSTORM
+{
+    class Parser
+    {
         //safe defaults
         string logging = "light";
         string semantics = "at-most-once";
 
-        public Dictionary<string, OperatorDTO> makeOperatorDTOs(string[] splitFile) {
-            System.Console.WriteLine("Building Operator drafts from previously split file.");
+        public Dictionary<string, OperatorDTO> makeOperatorDTOs(string[] splitFile)
+        {
+            Logger.debug("Building Operator drafts from previously split file.");
 
             //ArrayList operatorDTOs = new ArrayList();
             Dictionary<string, OperatorDTO> operatorDTOs = new Dictionary<string, OperatorDTO>();
@@ -31,13 +33,16 @@ namespace DADSTORM {
             int n, i;
             n = i = 0;
 
-            while (n < splitFile.Length) {
-                //System.Console.WriteLine("\nWord being filtered: {0} - n = {1}", splitFile[n], n);
-                switch (splitFile[n]) {
+            while (n < splitFile.Length)
+            {
+                Logger.debug("\nWord being filtered: {0} - n = {1}", splitFile[n], n);
+                switch (splitFile[n])
+                {
                     case "input":
                         i = n + 2;
-                        while (!splitFile[i].Equals("rep")) {
-                            //System.Console.WriteLine("Operator's input: {0}", splitFile[i]);
+                        while (!splitFile[i].Equals("rep"))
+                        {
+                            Logger.debug("Operator's input: {0}", splitFile[i]);
                             inputs.Add(splitFile[i]);
                             i++;
                         }
@@ -45,18 +50,19 @@ namespace DADSTORM {
                         break;
                     case "rep":
                         rep = splitFile[n + 2];
-                        //System.Console.WriteLine("Operator rep factor: {0}", rep);
+                        Logger.debug("Operator rep factor: {0}", rep);
                         n += 2;
                         break;
                     case "routing":
                         rout = splitFile[n + 1];
-                        //System.Console.WriteLine("Operator routing policy: {0}", rout);
+                        Logger.debug("Operator routing policy: {0}", rout);
                         n++;
                         break;
                     case "address":
                         i = n + 1;
-                        while (!splitFile[i].Equals("operator")) {
-                            //System.Console.WriteLine("Adresses: {0}", splitFile[i]);
+                        while (!splitFile[i].Equals("operator"))
+                        {
+                            Logger.debug("Adresses: {0}", splitFile[i]);
                             addr.Add(splitFile[i]);
                             port.Add(Parser.parsePortFromAddress(splitFile[i]));
                             i++;
@@ -65,24 +71,31 @@ namespace DADSTORM {
                         break;
                     case "operator":
                         i = n + 2;
-                        while (!splitFile[i].Equals("input")) {
-                            //System.Console.WriteLine("Operator spec items: {0}. i = {1}", splitFile[i], i);
+                        while (!splitFile[i].Equals("input"))
+                        {
+                            Logger.debug("Operator spec items: {0}. i = {1}", splitFile[i], i);
                             spec.Add(splitFile[i]);
                             i++;
-                            if (i == splitFile.Count()) {
+                            if (i == splitFile.Count())
+                            {
                                 break;
                             }
                         }
-                        if (i < splitFile.Count()) {
+                        if (i < splitFile.Count())
+                        {
                             spec.RemoveAt(spec.Count - 1);
-                            //System.Console.WriteLine("spec array's current last item: {0}", spec[spec.Count - 1]);
+                            Logger.debug("spec array's current last item: {0}", spec[spec.Count - 1]);
                             n = i - 2;
                         }
-                        else {
+                        else
+                        {
                             n = i;
                         }
+
                         operatorDTOs.Add(id, new OperatorDTO(id, inputs, rep, rout, addr, spec, port));
-                        //System.Console.WriteLine("Added new operator draft to ArrayList. Continue?");
+
+                        Logger.debug("Added new operator draft to ArrayList. Continue?");
+
                         inputs = new List<string>();
                         addr = new List<string>();
                         spec = new List<string>();
@@ -91,13 +104,13 @@ namespace DADSTORM {
                         break;
                     default:
                         id = splitFile[n];
-                        //System.Console.WriteLine("New operator with id: {0}", id);
-                        //System.Console.WriteLine("Entered default statement.");
+                        Logger.debug("New operator with id: {0}", id);
+                        Logger.debug("Entered default statement.");
                         break;
                 }
                 n++;
             }
-            System.Console.WriteLine("Drafts all done.");
+            Logger.debug("Drafts all done.");
 
             //setting DTO's next_op_addresses parameter
             setNextOperatorAddress(operatorDTOs);
@@ -106,7 +119,7 @@ namespace DADSTORM {
 
             //setting logging level and semantics
             string[] commands = readCommands();
-            
+
             //TODO safe defaults not implemented
             foreach (string str in commands)
             {
@@ -123,7 +136,7 @@ namespace DADSTORM {
                     }
                 }
                 else if (splt[0] == "Semantics")
-                    {
+                {
                     if (splt[1] == "at-most-once" || splt[1] == "at-least-once" || splt[1] == "exactly-once")
                     {
                         foreach (KeyValuePair<string, OperatorDTO> op in operatorDTOs)
@@ -138,61 +151,72 @@ namespace DADSTORM {
             return operatorDTOs;
         }
 
-        public void setNextOperatorAddress(Dictionary<string, OperatorDTO> opDTOs) {
-            foreach (OperatorDTO op in opDTOs.Values) {
-                foreach (string input in op.input_ops) {
-                    if (input.StartsWith("OP")) {
+        public void setNextOperatorAddress(Dictionary<string, OperatorDTO> opDTOs)
+        {
+            foreach (OperatorDTO op in opDTOs.Values)
+            {
+                foreach (string input in op.input_ops)
+                {
+                    if (input.StartsWith("OP"))
+                    {
                         opDTOs[input].next_op_addresses = opDTOs[input].next_op_addresses.Concat(op.address).ToList();
                     }
                 }
             }
         }
 
-        public string[] readConfigOps() {
+        public string[] readConfigOps()
+        {
 
             string opDef = "";
             System.IO.StreamReader reader = new System.IO.StreamReader(@"..\..\..\dadstorm.config");
 
             string line = reader.ReadLine();
-            while ((line = reader.ReadLine()) != null) {
-                if(line.StartsWith("OP"))
+            while ((line = reader.ReadLine()) != null)
+            {
+                if (line.StartsWith("OP"))
                     opDef = opDef + " " + line;
             }
 
             //splitting text
             char[] splitChars = { ' ', ',', '\t', '\n', '\r' };
-            string[] splitFile = opDef.Split(splitChars, StringSplitOptions.RemoveEmptyEntries);            
-            
-            System.Console.WriteLine("Done splitting. Size = {0}. Continue?", splitFile.Count());
+            string[] splitFile = opDef.Split(splitChars, StringSplitOptions.RemoveEmptyEntries);
+
+            Logger.debug("Done splitting. Size = {0}. Continue?", splitFile.Count());
             System.Console.ReadLine();
-            
+
             return splitFile;
         }
 
-        public string[] readCommands() {
+        public string[] readCommands()
+        {
             List<string> commands = new List<string>();
             System.IO.StreamReader reader = new System.IO.StreamReader(@"..\..\..\dadstorm.config");
 
             string line = reader.ReadLine();
-            while ((line = reader.ReadLine()) != null) {
+            while ((line = reader.ReadLine()) != null)
+            {
                 if (!line.StartsWith("OP") & !line.StartsWith("%"))
                     commands.Add(line);
             }
             commands.RemoveAll(string.IsNullOrWhiteSpace);
-            foreach (string st in commands) {
-                //System.Console.WriteLine(st);
+            foreach (string st in commands)
+            {
+                Logger.debug(st);
             }
             return commands.ToArray();
         }
 
-        public static string parsePortFromAddress(string address) {
+        public static string parsePortFromAddress(string address)
+        {
             string portRegex = @"\:[A-Za-z0-9\-]+\/";
             Match mc = Regex.Match(address, portRegex);
             string match = mc.Value;
             return match.Substring(1, match.Length - 2);
         }
 
-        public static string parseIPFromAddress(string address) {
+        public static string parseIPFromAddress(string address)
+        {
             string IPRegex = @"tcp://[0-9\.]+:";
             Match mc = Regex.Match(address, IPRegex);
             string IP = mc.Value;

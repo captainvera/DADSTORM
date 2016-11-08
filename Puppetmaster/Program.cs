@@ -47,14 +47,11 @@ namespace DADSTORM
 
             PuppetmasterListener pml = new PuppetmasterListener(log);
 
-
             TcpChannel channel = new TcpChannel(port);
             log.writeLine("PuppetMaster on port:" + port);
 
             ChannelServices.RegisterChannel(channel, false);
             RemotingServices.Marshal(pml, "pml", typeof(PuppetmasterListener));
-
-
             Puppetmaster pm = new Puppetmaster(operatorDTOs, log);
 
             pm.setUpOperators();
@@ -76,26 +73,31 @@ namespace DADSTORM
         }
     }
 
-    class Puppetmaster {
-
+    class Puppetmaster
+    {
         Logger logger;
         public Dictionary<string, OperatorDTO> operatorDTOs;
 
-        public Puppetmaster(Dictionary<string, OperatorDTO> opDTOs, Logger log) {
+        public Puppetmaster(Dictionary<string, OperatorDTO> opDTOs, Logger log)
+        {
             operatorDTOs = opDTOs;
             logger = log;
         }
 
-        public void setUpOperators() {
+        public void setUpOperators()
+        {
             logger.writeLine("Setting up operators.");
-            foreach (OperatorDTO op in operatorDTOs.Values) {
+            foreach (OperatorDTO op in operatorDTOs.Values)
+            {
                 createOperator(op);
             }
         }
 
-        private void createOperator(OperatorDTO op) {
+        private void createOperator(OperatorDTO op)
+        {
             logger.writeLine("Creating operator " + op.op_id);
-            for(int i=0; i<op.address.Count; i++) {
+            for(int i=0; i<op.address.Count; i++)
+            {
                 //logger.writeLine("Reaching PCS at {0} to set up ", PCSaddress, op.op_id);
                 string PCSaddress = Parser.parseIPFromAddress(op.address[i]) + ":10000/pcs";
                 op.curr_rep = i;
@@ -111,7 +113,8 @@ namespace DADSTORM
             ProcessCreationService pcs = getPCS(PCSaddress, op);
             if (pcs == null)
                 logger.writeLine("Couldn't reach PCS.");
-            try { 
+            try
+            { 
                 pcs.createProcess(op);
             }
             catch (System.Net.Sockets.SocketException e)
