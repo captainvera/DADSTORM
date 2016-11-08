@@ -32,7 +32,8 @@ namespace DADSTORM
             //Writing DTO to xml string
             string serializedDTO = Serialize(op);
             System.Console.WriteLine(serializedDTO);
-            p.StartInfo.Arguments = serializedDTO;
+            serializedDTO = serializedDTO.Replace("\"", "\\\"");
+            p.StartInfo.Arguments = "\""+ serializedDTO + "\"";
 
             p.Start();
 

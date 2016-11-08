@@ -20,6 +20,7 @@ namespace DADSTORM {
             }
             string dtoXml = args[0];
 
+            System.Console.WriteLine(dtoXml);
             OperatorDTO op = Deserialize<OperatorDTO>(dtoXml);
 
             Logger.writeLine("Processed " + op.next_op_addresses.Count + " output replicas", "ReplicaProcess");
