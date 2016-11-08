@@ -29,7 +29,7 @@ namespace DADSTORM
             log.writeLine("PCS created & online");
             log.writeLine("Physical Node Initialized");
 
-            Console.ReadLine();
+            while (true) { }
         }
     }
 }
