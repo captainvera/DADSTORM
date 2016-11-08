@@ -56,13 +56,7 @@ namespace DADSTORM
             //Remotely create process in node
             pcs.createProcess("1", "10011", new string[]{"tcp://localhost:10012/Replica2"});
             pcs.createProcess("2", "10012", new string[]{"tcp://localhost:10013/Replica3"});
-            pcs.createProcess("3", "10013", new string[]{"tcp://localhost:10014/Replica4"});
-            pcs.createProcess("4", "10014", new string[]{"tcp://localhost:10015/Replica5"});
-            pcs.createProcess("5", "10015", new string[]{"tcp://localhost:10016/Replica6"});
-            pcs.createProcess("6", "10016", new string[]{"tcp://localhost:10017/Replica7"});
-            pcs.createProcess("7", "10017", new string[]{"tcp://localhost:10018/Replica8"});
-            pcs.createProcess("8", "10018", new string[]{"tcp://localhost:10019/Replica9"});
-            pcs.createProcess("9", "10019", new string[]{"X"});
+            pcs.createProcess("3", "10013", new string[]{"X"});
 
             System.Threading.Thread.Sleep(1000);
 
@@ -70,6 +64,7 @@ namespace DADSTORM
             log.writeLine("Trying to connect to replica");
             Replica rb = (Replica)Activator.GetObject(typeof(Replica),
                 "tcp://localhost:10011/Replica1");
+            
             log.writeLine("Done");
             if (rb == null)
                 log.writeLine("ERROR: NO SERVER");
@@ -81,6 +76,12 @@ namespace DADSTORM
                     t.set(0, i + " bottles of beer on the wall, " + i + " bottles of beer, take one down, pass it around you got " + (i-1) + " bottles of beer on the wall!");
                     rb.input(t);
                     System.Threading.Thread.Sleep(100);
+                    if(i == 970)
+                    {
+                        rb.freeze();
+                        System.Threading.Thread.Sleep(3000);
+                        rb.unfreeze();
+                    }
                 }
             }
             */

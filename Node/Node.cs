@@ -23,12 +23,13 @@ namespace DADSTORM
 
             TcpChannel channel = new TcpChannel(10000);
             ChannelServices.RegisterChannel(channel, false);
+
             RemotingServices.Marshal(pcs, "pcs", typeof(ProcessCreationService));
 
             log.writeLine("PCS created & online");
             log.writeLine("Physical Node Initialized");
 
-            Console.ReadLine();
+            while (true) { }
         }
     }
 }
