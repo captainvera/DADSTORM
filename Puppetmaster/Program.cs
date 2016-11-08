@@ -50,6 +50,7 @@ namespace DADSTORM
             log.writeLine("Trying to connect to replica");
             Replica rb = (Replica)Activator.GetObject(typeof(Replica),
                 "tcp://localhost:10011/Replica1");
+            
             log.writeLine("Done");
             if (rb == null)
                 log.writeLine("ERROR: NO SERVER");
@@ -61,6 +62,12 @@ namespace DADSTORM
                     t.set(0, i + " bottles of beer on the wall, " + i + " bottles of beer, take one down, pass it around you got " + (i-1) + " bottles of beer on the wall!");
                     rb.input(t);
                     System.Threading.Thread.Sleep(100);
+                    if(i == 970)
+                    {
+                        rb.freeze();
+                        System.Threading.Thread.Sleep(3000);
+                        rb.unfreeze();
+                    }
                 }
             }
 
