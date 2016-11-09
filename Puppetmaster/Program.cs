@@ -14,36 +14,26 @@ namespace DADSTORM
 {
     class Program
     {
-        private static Logger log;
-
         static void Main(string[] args)
         {
-            int port = 10001;
-
-            log = new Logger("PuppetMaster");
+            Logger log = new Logger("PuppetMaster");
             log.writeLine("Starting Puppetmaster");
             log.writeLine("Parsing configuration file");
-            
+
+            PuppetmasterListener pml = new PuppetmasterListener(log);
+
+            int port = 10001;
+
             Parser parser = new Parser(@"..\..\..\dadstorm.config");
-
             string[] commands =  parser.readCommands();
-
-            Console.WriteLine("commands:");
-            foreach (string str in commands)
-                Console.WriteLine(str);
-
             Dictionary<string, OperatorDTO> operatorDTOs = parser.makeOperatorDTOs();
             log.writeLine("Done");
 
             //TODO put something on config file
             Console.WriteLine("What is the current IP address of the puppetmaster?");
             string ip = Console.ReadLine();
-
             ip = string.Concat("tcp://", ip, ":", port, "/pml");
-
             log.writeLine("Current ip:" + ip);
-
-            PuppetmasterListener pml = new PuppetmasterListener(log);
 
             TcpChannel channel = new TcpChannel(port);
             log.writeLine("PuppetMaster on port:" + port);
@@ -67,7 +57,6 @@ namespace DADSTORM
             sh.start(commands);
 
             pm.test();
-
         }
     }
 
