@@ -102,9 +102,11 @@ namespace DADSTORM
         private BlockingCollection<Tuple> _out;
 
         private Thread _wthread;
+            
         private CancellationTokenSource _source;
         private CancellationToken _cancelToken;
 
+        //Internal state variables
         //Boolean read and writes are atomic, no need for thread locking
         private bool _freeze;
         ManualResetEvent _unfreezeSignal;
@@ -144,7 +146,7 @@ namespace DADSTORM
                 {
                     res = _op.process(data);
 
-                    Console.WriteLine(res.get(0).ToString() + " | by : " + Thread.CurrentThread.ManagedThreadId);
+                    Logger.debug(res.toString() + " | by : " + Thread.CurrentThread.ManagedThreadId);
 
                     _out.Add(res);
                     res = null;
@@ -156,7 +158,7 @@ namespace DADSTORM
                 if (res != null)
                 {
                     Logger.writeLine("Tuple restored to input buffer", "Thread" + Thread.CurrentThread.ManagedThreadId);
-                    _in.Add(res);
+                    _out.Add(res);
                 }
             }
 

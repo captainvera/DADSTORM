@@ -25,7 +25,8 @@ namespace DADSTORM
         public void readFile()
         {
             System.IO.StreamReader reader = new System.IO.StreamReader(_file);
-            string line = reader.ReadLine();
+
+            string line = null;
             while ((line = reader.ReadLine()) != null)
             {
                 Logger.debug(line, "TupleFileReader");
@@ -82,11 +83,12 @@ namespace DADSTORM
 
         public void process()
         {
-            Thread.Sleep(2000);
             Logger.writeLine("Starting outputting tuples to buffer", "TFRWorker");
 
             _reader.readFile();
             Tuple tup;
+
+            tup = null;
             while((tup = _reader.getNextTuple()) != null)
             {
                 _outputBuffer.Add(tup);

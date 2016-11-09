@@ -21,22 +21,13 @@ namespace DADSTORM {
             }
             string dtoXml = args[0];
 
-            System.Console.WriteLine(dtoXml);
-            OperatorDTO op = Deserialize<OperatorDTO>(dtoXml);
+            OperatorDTO dto = Deserialize<OperatorDTO>(dtoXml);
 
-            Logger.writeLine("Processed " + op.next_op_addresses.Count + " output replicas", "ReplicaProcess");
+            Logger.writeLine("Processed " + dto.next_op_addresses.Count + " output replicas", "ReplicaProcess");
 
             //Might need proper implementation for naming: CHECK PROJ INSTR
-            string id = op.op_id;
-            string name = "Replica" + id;
-            string replication = op.rep_fact;
-            string routing = op.routing;
-            string address = op.address[op.curr_rep];
-            string[] op_spec = op.op_spec.ToArray();
-            string port = op.ports[op.curr_rep];
-            string[] nextOperators = op.next_op_addresses.ToArray();
-            string logging = op.logging;
-            string semantics = op.semantics;
+            string name = "Replica" + dto.op_id;
+            string port = dto.ports[dto.curr_rep];
 
             IDictionary propBag = new Hashtable();
             propBag["port"] = Int32.Parse(port);
@@ -45,7 +36,7 @@ namespace DADSTORM {
             TcpChannel channel = new TcpChannel(propBag, new BinaryClientFormatterSinkProvider(), new BinaryServerFormatterSinkProvider());
             ChannelServices.RegisterChannel(channel, false);
 
-            Replica rep = new Replica(id, port.Replace("10", "11"), replication, routing, address, op_spec, logging, semantics, nextOperators);
+            Replica rep = new Replica(dto);
 
             RemotingServices.Marshal(rep, "op", typeof(Replica));
             Logger.writeLine("Registered with name:" + name, "ReplicaProcess");
@@ -70,58 +61,63 @@ namespace DADSTORM {
     {
         private Logger log;
 
+        /** ------------------ Replica Configuration ---------------------- **/
+
+        private Boolean primary;
         private string id, port, replication, routing, address, logging, semantics;
         private string[] output, op_spec;
+
+        /** ------------------- Multithreading ---------------------------- **/
 
         OperatorWorkerPool op_pool;
         BlockingCollection<Tuple> input_buffer;
         BlockingCollection<Tuple> output_buffer;
 
-        private Boolean primary;
+        /** ------------------- Replica Abstraction ----------------------- **/
 
         private IOperator op;
         private IRoutingStrategy router;
-
         private TcpChannel channel;
 
-        public Replica(string _id, string _port, string _replication, string _routing, string _address, string[] _op_spec, string _logging, string _semantics, string[] _next)
-        {
+        /** --------------------------------------------------------------- **/
 
+        public Replica(OperatorDTO dto)
+        {
             //Replica configuration
             primary = false;
-            id = _id;
-            port = _port;
-            output = _next;
-            replication = _replication;
-            routing = _routing;
-            address = _address;
-            logging = _logging;
-            semantics = _semantics;
-            op_spec = _op_spec;
+            id = dto.op_id;
+            port = dto.ports[dto.curr_rep];
+            output = dto.next_op_addresses.ToArray();
+            replication = dto.rep_fact;
+            routing = dto.routing;
+            address = dto.address[dto.curr_rep];
+            logging = dto.logging;
+            semantics = dto.semantics;
+            op_spec = dto.op_spec.ToArray();
 
-            //log = new Logger("Replica" + id, logging);
             log = new Logger("Replica" + id);
 
             //Routing Strategy for this replica
+            //TODO::XXX::Get routing strategy instance from routing parameter
             router = new PrimaryRoutingStrategy(this);
 
             //op = new op(op_spec);
+            //TODO::XXX::Get Operator instance from op_spec parameter
             op = new DUP();
 
+            //Multithreading setup
             input_buffer = new BlockingCollection<Tuple>();
             output_buffer = new BlockingCollection<Tuple>();
             op_pool = new OperatorWorkerPool(4, op, input_buffer, output_buffer);
 
             op_pool.start();
+            
             log.writeLine("Replica " + id + " is now online");
         }
 
         public void input(Tuple t)
         {
-            //log.writeLine("Received input: " + t.get(0));
-            //Tuple res = op.process(t);
-            //router.route(res);
-            log.writeLine("Got input");
+            log.writeLine("Received tuple");
             input_buffer.Add(t);
         }
 
@@ -172,6 +168,14 @@ namespace DADSTORM {
         public void unfreeze()
         {
             op_pool.unfreezeAll(); 
+        }
+
+        public void readFile()
+        {
+            string file = @"..\..\..\tweeters.dat";
+            log.writeLine("Processing file: " + file);
+            TupleFileReaderWorker tfrw = new TupleFileReaderWorker(input_buffer, file);
+            tfrw.start();
         }
     }
 }
