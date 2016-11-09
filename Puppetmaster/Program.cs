@@ -26,7 +26,7 @@ namespace DADSTORM
             log.writeLine("Starting Puppetmaster");
             log.writeLine("Parsing configuration file");
             
-            Parser parser = new Parser();
+            Parser parser = new Parser(@"..\..\..\dadstorm.config");
 
             string[] commands =  parser.readCommands();
 
@@ -34,7 +34,7 @@ namespace DADSTORM
             foreach (string str in commands)
                 Console.WriteLine(str);
 
-            Dictionary<string, OperatorDTO> operatorDTOs = parser.makeOperatorDTOs(parser.readConfigOps());
+            Dictionary<string, OperatorDTO> operatorDTOs = parser.makeOperatorDTOs();
             log.writeLine("Done");
 
             //TODO put something on config file

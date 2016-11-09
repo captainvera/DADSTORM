@@ -12,15 +12,22 @@ namespace DADSTORM
     class Parser
     {
         //safe defaults
+        string _pathToFile;
         string logging = "light";
         string semantics = "at-most-once";
 
-        public Dictionary<string, OperatorDTO> makeOperatorDTOs(string[] splitFile)
+        public Parser(string targetFile)
+        {
+            _pathToFile = targetFile;
+        }
+
+        public Dictionary<string, OperatorDTO> makeOperatorDTOs()
         {
             Logger.debug("Building Operator drafts from previously split file.");
 
-            //ArrayList operatorDTOs = new ArrayList();
             Dictionary<string, OperatorDTO> operatorDTOs = new Dictionary<string, OperatorDTO>();
+
+            string[] splitFile = readConfigOps();
 
             string id = "placeholder";
             string rep = "placeholder";
@@ -167,7 +174,6 @@ namespace DADSTORM
 
         public string[] readConfigOps()
         {
-
             string opDef = "";
             System.IO.StreamReader reader = new System.IO.StreamReader(@"..\..\..\dadstorm.config");
 
@@ -191,7 +197,7 @@ namespace DADSTORM
         public string[] readCommands()
         {
             List<string> commands = new List<string>();
-            System.IO.StreamReader reader = new System.IO.StreamReader(@"..\..\..\dadstorm.config");
+            System.IO.StreamReader reader = new System.IO.StreamReader(_pathToFile);
 
             string line = reader.ReadLine();
             while ((line = reader.ReadLine()) != null)
