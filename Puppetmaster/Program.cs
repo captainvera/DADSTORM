@@ -5,6 +5,9 @@ using System.Linq;
 using System.Runtime.Remoting;
 using System.Runtime.Remoting.Channels;
 using System.Runtime.Remoting.Channels.Tcp;
+using System.Runtime.Remoting.Messaging;
+using System.Runtime.Remoting.Messaging;
+using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -14,50 +17,41 @@ namespace DADSTORM
 {
     class Program
     {
+
         static void Main(string[] args)
         {
             Logger log = new Logger("PuppetMaster");
             log.writeLine("Starting Puppetmaster");
             log.writeLine("Parsing configuration file");
 
-            PuppetmasterListener pml = new PuppetmasterListener(log);
-
-            int port = 10001;
-
             Parser parser = new Parser(@"..\..\..\dadstorm.config");
             string[] commands =  parser.readCommands();
             Dictionary<string, OperatorDTO> operatorDTOs = parser.makeOperatorDTOs();
-            log.writeLine("Done");
+
+
+            PuppetmasterListener pml = new PuppetmasterListener(log);
+            int port = 10001;
 
             //TODO put something on config file
             Console.WriteLine("What is the current IP address of the puppetmaster?");
             string ip = Console.ReadLine();
             ip = string.Concat("tcp://", ip, ":", port, "/pml");
-            log.writeLine("Current ip:" + ip);
+            log.writeLine("Located at: " + ip);
 
             TcpChannel channel = new TcpChannel(port);
-            log.writeLine("PuppetMaster on port:" + port);
-
             ChannelServices.RegisterChannel(channel, false);
             RemotingServices.Marshal(pml, "pml", typeof(PuppetmasterListener));
+
             Puppetmaster pm = new Puppetmaster(operatorDTOs, log);
 
             Shell sh = new Shell(pm);
 
             pm.setUpOperators();
 
-            //Want the script to be executed? uncomment following line
-            //sh.start(commands);
-
-            sh.start();
-
-            log.writeLine("shell stopped");
-            System.Threading.Thread.Sleep(10000);
-
-            log.writeLine("shell restarted");
+            log.writeLine("Welcome to the PuppetMaster Shell.");
             sh.start(commands);
+            log.writeLine("Goodbye.");
 
-            pm.test();
         }
     }
 
@@ -65,6 +59,7 @@ namespace DADSTORM
     {
         Logger logger;
         public Dictionary<string, OperatorDTO> operatorDTOs;
+
 
         public Puppetmaster(Dictionary<string, OperatorDTO> opDTOs, Logger log)
         {
@@ -307,18 +302,6 @@ namespace DADSTORM
             }
         }
 
-        public void test()
-        {
-            for (int i = 999; i > 0; i--)
-            {
-                Tuple t = new Tuple(1);
-                t.set(0, i + " bottles of beer on the wall, " + i + " bottles of beer, take one down, pass it around you got " + (i - 1) + " bottles of beer on the wall!");
-                Replica rep = getReplica(operatorDTOs["OP1"].address[0]);
-                rep.input(t);
-                System.Threading.Thread.Sleep(100);
-            }
-        }
-
         public void readFile(string op, int rep)
         {
             logger.writeLine("Read file...");
@@ -338,6 +321,7 @@ namespace DADSTORM
                 }
             }
         }
+
     };
 
     class PuppetmasterListener : MarshalByRefObject
