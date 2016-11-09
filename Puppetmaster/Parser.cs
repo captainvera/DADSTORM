@@ -100,7 +100,6 @@ namespace DADSTORM
                         addr = new List<string>();
                         spec = new List<string>();
                         port = new List<string>();
-                        System.Console.ReadLine();
                         break;
                     default:
                         id = splitFile[n];
@@ -183,7 +182,6 @@ namespace DADSTORM
             string[] splitFile = opDef.Split(splitChars, StringSplitOptions.RemoveEmptyEntries);
 
             Logger.debug("Done splitting. Size = {0}. Continue?", splitFile.Count());
-            System.Console.ReadLine();
 
             return splitFile;
         }
@@ -196,7 +194,7 @@ namespace DADSTORM
             string line = reader.ReadLine();
             while ((line = reader.ReadLine()) != null)
             {
-                if (!line.StartsWith("OP") & !line.StartsWith("%"))
+                if (!line.StartsWith("OP") && !line.StartsWith("%"))
                     commands.Add(line);
             }
             commands.RemoveAll(string.IsNullOrWhiteSpace);
