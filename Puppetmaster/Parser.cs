@@ -12,13 +12,15 @@ namespace DADSTORM
     class Parser
     {
         //safe defaults
-        string _pathToFile;
         string logging = "light";
         string semantics = "at-most-once";
+
+        string _pathToFile;
 
         public Parser(string targetFile)
         {
             _pathToFile = targetFile;
+
         }
 
         public Dictionary<string, OperatorDTO> makeOperatorDTOs()
@@ -107,7 +109,7 @@ namespace DADSTORM
                         addr = new List<string>();
                         spec = new List<string>();
                         port = new List<string>();
-                        System.Console.ReadLine();
+
                         break;
                     default:
                         id = splitFile[n];
@@ -189,7 +191,6 @@ namespace DADSTORM
             string[] splitFile = opDef.Split(splitChars, StringSplitOptions.RemoveEmptyEntries);
 
             Logger.debug("Done splitting. Size = {0}. Continue?", splitFile.Count());
-            System.Console.ReadLine();
 
             return splitFile;
         }
@@ -197,14 +198,16 @@ namespace DADSTORM
         public string[] readCommands()
         {
             List<string> commands = new List<string>();
-            System.IO.StreamReader reader = new System.IO.StreamReader(_pathToFile);
+            System.IO.StreamReader reader = new System.IO.StreamReader(@"..\..\..\dadstorm.config");
 
             string line = reader.ReadLine();
+
             while ((line = reader.ReadLine()) != null)
             {
-                if (!line.StartsWith("OP") & !line.StartsWith("%"))
+                if (!line.StartsWith("OP") && !line.StartsWith("%"))
                     commands.Add(line);
             }
+
             commands.RemoveAll(string.IsNullOrWhiteSpace);
             foreach (string st in commands)
             {
