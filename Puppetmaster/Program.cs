@@ -42,9 +42,10 @@ namespace DADSTORM
             RemotingServices.Marshal(pml, "pml", typeof(PuppetmasterListener));
             Puppetmaster pm = new Puppetmaster(operatorDTOs, log);
 
+            Shell sh = new Shell(pm);
+
             pm.setUpOperators();
 
-            Shell sh = new Shell(pm);
             //Want the script to be executed? uncomment following line
             //sh.start(commands);
 
