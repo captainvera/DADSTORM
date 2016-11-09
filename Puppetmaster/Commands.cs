@@ -192,4 +192,23 @@ namespace DADSTORM
             }
         }
     }
+
+    class ReadFileCommand : Command
+    {
+        public ReadFileCommand(Shell sh) : base(sh, "readfile") { }
+
+        public override void execute(string[] list)
+        {
+            if (list.Length != 3)
+            {
+                Console.WriteLine("[Usage]" + getID() + " file");
+            }
+            else {
+                int replica_id = 0;
+                if (Int32.TryParse(list[2], out replica_id) == true)
+                    Shell().readFile(list[1], replica_id);
+                else Console.WriteLine("[Usage] " + list[2] + " must be an integer");
+            }
+        }
+    }
 }

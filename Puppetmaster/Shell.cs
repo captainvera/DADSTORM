@@ -11,7 +11,7 @@ namespace DADSTORM
         private Dictionary<string, Command> _commands = new Dictionary<string, Command>(StringComparer.OrdinalIgnoreCase);
         private string _prompt = ">>";
         private Puppetmaster _pm;
-        private bool exitbool;
+        private bool _exit;
 
         public Shell(Puppetmaster pm)
         {
@@ -24,6 +24,7 @@ namespace DADSTORM
             new IntervalCommand(this);
             new StatusCommand(this);
             new WaitCommand(this);
+            new ReadFileCommand(this);
 
             _pm = pm;
         }
@@ -50,7 +51,7 @@ namespace DADSTORM
             while ((str = Console.ReadLine()) != null)
             {
                 processCommand(str);
-                if (exitbool == true)
+                if (_exit == true)
                     break;
                 Console.Write(_prompt);
             }
@@ -65,12 +66,16 @@ namespace DADSTORM
             {
                 c.execute(args);
             }
+            else
+            {
+                print("ERROR: Command " + args[0] + " isn't recognized");
+            }
 
         }
 
         public void exit()
         {
-            exitbool = true;
+            _exit = true;
         }
 
         public void print(string txt)
@@ -116,6 +121,11 @@ namespace DADSTORM
         public void unfreeze(string op, int replica)
         {
             _pm.unfreeze(op, replica);
+        }
+
+        public void readFile(string op, int replica)
+        {
+            _pm.readFile(op, replica);
         }
     }
 }

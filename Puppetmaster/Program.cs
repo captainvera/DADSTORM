@@ -20,8 +20,6 @@ namespace DADSTORM
         {
             int port = 10001;
 
-            
-
             log = new Logger("PuppetMaster");
             log.writeLine("Starting Puppetmaster");
             log.writeLine("Parsing configuration file");
@@ -331,6 +329,25 @@ namespace DADSTORM
             }
         }
 
+        public void readFile(string op, int rep)
+        {
+            logger.writeLine("Read file...");
+
+            OperatorDTO oper = getOperator(op);
+            if (oper != null)
+            {
+                try
+                {
+                    getReplica(oper.address[rep]).readFile();
+                    //getReplica(oper.address[rep]).freeze();
+                }
+                catch (System.Net.Sockets.SocketException e)
+                {
+
+                    logger.writeLine(oper.op_id + " replica " + rep + " is unreachable.");
+                }
+            }
+        }
     };
 
     class PuppetmasterListener : MarshalByRefObject
