@@ -21,10 +21,12 @@ namespace DADSTORM
             {
 
                 case "DUP":
+                    Logger.writeLine("DUP operator started.", "OperatorSelector");
                     op = new DUP();
                     return;
 
                 case "UNIQ":
+                    Logger.writeLine("UNIQ operator started.", "OperatorSelector");
                     if (Int32.TryParse(args[0], out field) == true)
                         op = new UNIQ(field);
                     else
@@ -35,6 +37,7 @@ namespace DADSTORM
                     return;
 
                 case "CUSTOM":
+                    Logger.writeLine("CUSTOM operator started.", "OperatorSelector");
                     if (args.Length == 3)
                         op = new CUSTOM(args[0], args[1], args[3]);
                     else
@@ -45,6 +48,7 @@ namespace DADSTORM
                     return;
 
                 case "FILTER":
+                    Logger.writeLine("FILTER operator started.", "OperatorSelector");
                     if (args.Length == 3 && Int32.TryParse(args[0], out field) == true)
                         op = new FILTER(field, args[1], args[2]);
                     else
@@ -55,6 +59,7 @@ namespace DADSTORM
                     return;
 
                 case "COUNT":
+                    Logger.writeLine("COUNT operator started.", "OperatorSelector");
                     op = new COUNT();
                     return;
 

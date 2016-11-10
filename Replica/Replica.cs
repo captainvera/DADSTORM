@@ -107,7 +107,7 @@ namespace DADSTORM {
 
             //op = new op(op_spec);
             //TODO::XXX::Get Operator instance from op_spec parameter
-            op = new DUP();
+            op = new Operator(dto.op_spec[0], dto.op_spec.GetRange(1,dto.op_spec.Count-1).ToArray());
 
             //Multithreading setup
             input_buffer = new BlockingCollection<Tuple>();
