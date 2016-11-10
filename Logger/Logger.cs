@@ -19,8 +19,8 @@ namespace DADSTORM
     {
         /**
          * Logging level:
-         * 0 - Regular
-         * 1 - Verbose
+         * 0 - light
+         * 1 - full
          * 2 - Debug
          */
 
@@ -41,6 +41,16 @@ namespace DADSTORM
         public void write(string s, params object[] args)
         {
             Console.Write("[" + id + "] " + String.Format(s, args)); 
+        }
+
+        public void writeLineRemote(string s, params object[] args)
+        {
+            Console.WriteLine(String.Format(s, args));
+        }
+
+        public void writeRemote(string s, params object[] args)
+        {
+            Console.Write(String.Format(s, args));
         }
 
         public static void writeLine(string s, string id, params object[] args)
@@ -64,20 +74,27 @@ namespace DADSTORM
     {
         private string id;
         private bool connected;
+        static int logLevel = 0;
         private ILogger remLogger;
         private string remoteAdress;
         public delegate void WriteAsyncDelegate(string str, params object[] args);
 
         /**
          * Logging level:
-         * 0 - Regular
-         * 1 - Verbose
+         * 0 - light
+         * 1 - full
          * 2 - Debug
          */
 
-        public RemoteLogger(string _id)
+        public RemoteLogger(string _id, string logging, string pmAdress)
         {
             id = _id;
+            if (logging.CompareTo("full") == 0)
+            {
+                logLevel = 1;
+                remoteAdress = pmAdress;
+                connect(remoteAdress);
+            }
         }
 
         public void connect(string address)
@@ -89,47 +106,65 @@ namespace DADSTORM
 
         public void write(string s, params object[] args)
         {
-            if (connected)
+            if (logLevel == 1)
             {
-                try
-                {
-                    WriteAsyncDelegate writeDel = new WriteAsyncDelegate(remLogger.writeLine);
-                    IAsyncResult remAr = writeDel.BeginInvoke(s, args, null, null);
-                }
-                catch (System.Net.Sockets.SocketException e)
-                {
-                    connected = false;
-                    writeLine("Remote logging failed", null);
 
+                if (connected)
+                {
+                    try
+                    {
+                        Console.Write("[" + id + "] " + String.Format(s, args));
+                        WriteAsyncDelegate writeDel = new WriteAsyncDelegate(remLogger.writeLine);
+                        s = string.Concat("[" + id +"]", s);
+                        IAsyncResult remAr = writeDel.BeginInvoke(s, args, null, null);
+                    }
+                    catch (System.Net.Sockets.SocketException e)
+                    {
+                        connected = false;
+                        writeLine("Remote logging failed", null);
+
+                    }
+                }
+                else if (remoteAdress != null)
+                {
+                    connect(remoteAdress);
+                    write(s, args);
                 }
             }
-            else if (remoteAdress != null)
+            else
             {
-                connect(remoteAdress);
-                write(s, args);
+                Console.Write("[" + id + "] " + String.Format(s, args));
             }
-
         }
 
         public void writeLine(string s, params object[] args)
         {
-            if (connected)
+            if (logLevel == 1)
             {
-                try
+                if (connected)
                 {
-                    WriteAsyncDelegate writeDel = new WriteAsyncDelegate(remLogger.writeLine);
-                    IAsyncResult remAr = writeDel.BeginInvoke(s, args, null, null);
+                    try
+                    {
+                        Console.WriteLine("[" + id + "] " + String.Format(s, args));
+                        WriteAsyncDelegate writeDel = new WriteAsyncDelegate(remLogger.writeLine);
+                        s = string.Concat("[" + id + "]", s);
+                        IAsyncResult remAr = writeDel.BeginInvoke(s, args, null, null);
+                    }
+                    catch (System.Net.Sockets.SocketException e)
+                    {
+                        connected = false;
+                        writeLine("Remote logging failed", null);
+                    }
                 }
-                catch (System.Net.Sockets.SocketException e)
+                else if (remoteAdress != null)
                 {
-                    connected = false;
-                    writeLine("Remote logging failed", null);
+                    connect(remoteAdress);
+                    write(s, args);
                 }
             }
-            else if (remoteAdress != null)
+            else
             {
-                connect(remoteAdress);
-                write(s, args);
+                Console.WriteLine("[" + id + "] " + String.Format(s, args));
             }
         }
     }
