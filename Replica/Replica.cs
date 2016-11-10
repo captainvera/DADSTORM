@@ -59,7 +59,7 @@ namespace DADSTORM {
     //Should we have a broker between replica process and replica?
     public class Replica : MarshalByRefObject
     {
-        private Logger log;
+        private RemoteLogger log;
 
         /** ------------------ Replica Configuration ---------------------- **/
 
@@ -97,7 +97,11 @@ namespace DADSTORM {
             semantics = dto.semantics;
             op_spec = dto.op_spec.ToArray();
 
-            log = new Logger("Replica" + id);
+            
+            log = new RemoteLogger("Replica" + id);
+
+            if (logging == "full")
+                log.connect(dto.pmAdress);
 
             //Routing Strategy for this replica
             //TODO::XXX::Get routing strategy instance from routing parameter
@@ -105,7 +109,7 @@ namespace DADSTORM {
 
             //op = new op(op_spec);
             //TODO::XXX::Get Operator instance from op_spec parameter
-            op = new DUP();
+            op = new Operator(dto.op_spec[0], dto.op_spec.GetRange(1,dto.op_spec.Count-1).ToArray());
 
             //Multithreading setup
             input_buffer = new BlockingCollection<Tuple>();
@@ -137,6 +141,7 @@ namespace DADSTORM {
         {
             Replica next = (Replica)Activator.GetObject(typeof(Replica), dest);
             next.input(t);
+            log.writeLine("Replica"+ id + " " + t.toString());
         }
 
         public Boolean isPrimary()

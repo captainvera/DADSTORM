@@ -10,6 +10,72 @@ using System.Globalization;
 
 namespace DADSTORM
 {
+    public class Operator : IOperator
+    {
+        IOperator op;
+
+        public Operator(string opname, string[] args)
+        {
+            int field = 0;
+            switch (opname)
+            {
+
+                case "DUP":
+                    Logger.writeLine("DUP operator started.", "OperatorSelector");
+                    op = new DUP();
+                    return;
+
+                case "UNIQ":
+                    Logger.writeLine("UNIQ operator started.", "OperatorSelector");
+                    if (Int32.TryParse(args[0], out field) == true)
+                        op = new UNIQ(field);
+                    else
+                    {
+                        Logger.writeLine("ERROR: UNIQ operator could not be instanced, wrong arguments.", "OperatorSelector");
+                        goto case "SAFE";
+                    }
+                    return;
+
+                case "CUSTOM":
+                    Logger.writeLine("CUSTOM operator started.", "OperatorSelector");
+                    if (args.Length == 3)
+                        op = new CUSTOM(args[0], args[1], args[3]);
+                    else
+                    {
+                        Logger.writeLine("ERROR: CUSTOM operator could not be instanced, wrong arguments.", "OperatorSelector");
+                        goto case "SAFE";
+                    }
+                    return;
+
+                case "FILTER":
+                    Logger.writeLine("FILTER operator started.", "OperatorSelector");
+                    if (args.Length == 3 && Int32.TryParse(args[0], out field) == true)
+                        op = new FILTER(field, args[1], args[2]);
+                    else
+                    {
+                        Logger.writeLine("ERROR: FILTER operator could not be instanced, wrong arguments.", "OperatorSelector");
+                        goto case "SAFE";
+                    }
+                    return;
+
+                case "COUNT":
+                    Logger.writeLine("COUNT operator started.", "OperatorSelector");
+                    op = new COUNT();
+                    return;
+
+                case "SAFE":
+                    Logger.writeLine("ERROR: Instancing DUP as safe default.", "OperatorSelector");
+                    op = new DUP();
+                    return;
+            }
+        }
+
+        public Tuple process(Tuple t)
+        {
+            return op.process(t);
+        }
+    }
+
     public interface IOperator
     {
         Tuple process(Tuple t);
