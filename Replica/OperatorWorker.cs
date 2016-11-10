@@ -93,7 +93,9 @@ namespace DADSTORM
         
         public void onCrash(object sender, EventArgs e)
         {
+            //TODO::XXX::Maybe kill the threads in a safer way?
             _source.Cancel();
+            _wthread.Abort();
         }
         /** ------------------------------------------------------  **/
 
@@ -129,6 +131,11 @@ namespace DADSTORM
         public void start()
         {
             _wthread.Start();
+        }
+
+        public void abort()
+        {
+            _wthread.Abort();
         }
 
         public void process()
