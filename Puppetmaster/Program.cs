@@ -49,7 +49,8 @@ namespace DADSTORM
             pm.setUpOperators();
 
             log.writeLine("Welcome to the PuppetMaster Shell.");
-            sh.start(commands);
+            //sh.start(commands);
+            sh.start();
             log.writeLine("Goodbye.");
 
         }
@@ -59,7 +60,10 @@ namespace DADSTORM
     {
         Logger logger;
         public Dictionary<string, OperatorDTO> operatorDTOs;
-
+        public delegate string PingAsyncDelegate(string str);
+        public delegate void IntervalAsyncDelegate(int time);
+        public delegate void VoidAsyncDelegate();
+        static string pingResult;
 
         public Puppetmaster(Dictionary<string, OperatorDTO> opDTOs, Logger log)
         {
@@ -81,7 +85,6 @@ namespace DADSTORM
             logger.writeLine("Creating operator " + op.op_id);
             for(int i=0; i<op.address.Count; i++)
             {
-                //logger.writeLine("Reaching PCS at {0} to set up ", PCSaddress, op.op_id);
                 string PCSaddress = Parser.parseIPFromAddress(op.address[i]) + ":10000/pcs";
                 op.curr_rep = i;
                 createReplica(PCSaddress, op);
@@ -149,15 +152,16 @@ namespace DADSTORM
 
         public void start(string op)
         {
-            logger.writeLine("start " + op);
+            logger.writeLine("Start " + op);
             OperatorDTO oper = getOperator(op);
             if (oper != null)
             {
                 foreach(Replica rep in getReplicas(oper))
                 {
-                    try { 
-                        rep.ping("IS TIME TO GO");
-                        //rep.start();
+                    try {
+                        /*VoidAsyncDelegate startDel = new VoidAsyncDelegate(rep.start);
+                        IAsyncResult remAr = startDel.BeginInvoke(null, null);*/
+                        logger.writeLine("Implement me. (Start)");
                     }
                     catch (System.Net.Sockets.SocketException e)
                     {
@@ -184,9 +188,7 @@ namespace DADSTORM
                     {
                         logger.writeLine("OP" + oper.op_id + " has an unreachable replica.");
                     }
-                    //rep.stop();
                 }
-
             }
         }
 
@@ -198,24 +200,23 @@ namespace DADSTORM
     
         public void status()
         {
-
+            logger.writeLine("Status:");
             foreach (KeyValuePair<string, OperatorDTO> entry in operatorDTOs)
             {
                 for (int i = 0; i < entry.Value.address.Count; i++)
                 {
-                    logger.writeLine("Getting replica with address:" + entry.Value.address[i]);
-                    Replica rep = getReplica(entry.Value.address[i]);
-                    if (rep == null) logger.writeLine("ABORT ABORT");
-                    //TODO: should say actual status (stopped/started/etc)
                     try
                     {
-                        if (rep.ping("ping") == "ping")
-                            logger.writeLine("Replica " + i + " of " + entry.Value.op_id + " is alive.");
+                        /* Replica replica = getReplica(entry.Value.address[i]); ;
+                         VoidAsyncDelegate statusDel = new VoidAsyncDelegate(replica.status);
+                         IAsyncResult remAr = statusDel.BeginInvoke(null, null); */
+                        logger.writeLine("Implement me. (Status)");
+
                     }
-                    catch (Exception e)
+                    catch (System.Net.Sockets.SocketException e)
                     {
                         //TODO apanhar excepçoes especificas
-                        logger.writeLine("Replica " + i + " of " + entry.Value.op_id + " is dead.");
+                        logger.writeLine("Replica " + i + " of " + entry.Value.op_id + " is unreachable.");
                     }
 
                 }
@@ -231,10 +232,12 @@ namespace DADSTORM
             {
                 foreach (Replica rep in getReplicas(oper))
                 {
-                try { 
-                    rep.ping("Recess time is:" + time);
-                    //rep.interval(time); 
-                }
+                try {
+                        /*
+                        IntervalAsyncDelegate intervalDel = new IntervalAsyncDelegate(rep.interval);
+                        IAsyncResult remAr = intervalDel.BeginInvoke(time, null, null);*/
+                        logger.writeLine("Implement me. (Interval)");
+                    }
                     catch (System.Net.Sockets.SocketException e)
                 {
                     logger.writeLine(oper.op_id + " has an unreachable replica.");
@@ -251,9 +254,11 @@ namespace DADSTORM
             OperatorDTO oper = getOperator(op);
             if(oper != null)
             {
-                try { 
-                    getReplica(oper.address[rep]).ping("Crash and burn");
-                    //getReplica(oper.address[rep]).crash();
+                try {
+                    /*Replica replica = getReplica(oper.address[rep]);
+                    VoidAsyncDelegate crashDel = new VoidAsyncDelegate(replica.crash);
+                    IAsyncResult remAr = crashDel.BeginInvoke(null, null);*/
+                    logger.writeLine("Implement me. (CRASH)");
                 }
                     catch (System.Net.Sockets.SocketException e)
                 {
@@ -272,8 +277,9 @@ namespace DADSTORM
             {
                 try
                 {
-                    getReplica(oper.address[rep]).ping("Frostnova");
-                    //getReplica(oper.address[rep]).freeze();
+                    Replica replica = getReplica(oper.address[rep]);
+                    VoidAsyncDelegate freezeDel = new VoidAsyncDelegate(replica.freeze);
+                    IAsyncResult remAr = freezeDel.BeginInvoke(null, null);
                 }
                 catch (System.Net.Sockets.SocketException e)
                 {
@@ -291,8 +297,9 @@ namespace DADSTORM
             {
                 try
                 {
-                    getReplica(oper.address[rep]).ping("Melt");
-                    //getReplica(oper.address[rep]).freeze();
+                    Replica replica = getReplica(oper.address[rep]);
+                    VoidAsyncDelegate unfreezeDel = new VoidAsyncDelegate(replica.unfreeze);
+                    IAsyncResult remAr = unfreezeDel.BeginInvoke(null, null);
                 }
                 catch (System.Net.Sockets.SocketException e)
                 {
@@ -311,8 +318,9 @@ namespace DADSTORM
             {
                 try
                 {
-                    getReplica(oper.address[rep]).readFile();
-                    //getReplica(oper.address[rep]).freeze();
+                    Replica replica = getReplica(oper.address[rep]);
+                    VoidAsyncDelegate readFileDel = new VoidAsyncDelegate(replica.readFile);
+                    IAsyncResult remAr = readFileDel.BeginInvoke(null, null);
                 }
                 catch (System.Net.Sockets.SocketException e)
                 {
@@ -320,6 +328,13 @@ namespace DADSTORM
                     logger.writeLine(oper.op_id + " replica " + rep + " is unreachable.");
                 }
             }
+        }
+
+        public static void PingAsyncCallback(IAsyncResult res)
+        {
+            PingAsyncDelegate delegat = (PingAsyncDelegate)((AsyncResult)res).AsyncDelegate;
+            pingResult = delegat.EndInvoke(res);
+            return;
         }
 
     };
