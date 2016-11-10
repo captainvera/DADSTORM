@@ -15,6 +15,7 @@ namespace DADSTORM
         public List<string> ports = new List<string>();
         public List<string> op_spec = new List<string>();
         public List<string> next_op_addresses = new List<string>();
+        public string pmAdress;
         public int curr_rep;
         public string logging;
         public string semantics;

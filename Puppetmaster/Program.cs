@@ -32,11 +32,15 @@ namespace DADSTORM
             PuppetmasterListener pml = new PuppetmasterListener(log);
             int port = 10001;
 
-            //TODO put something on config file
+            //TODO put something on config file QUESTION, AQUI USAR LOGGER?
             Console.WriteLine("What is the current IP address of the puppetmaster?");
             string ip = Console.ReadLine();
             ip = string.Concat("tcp://", ip, ":", port, "/pml");
             log.writeLine("Located at: " + ip);
+            
+            //TODO take this out
+            foreach(KeyValuePair<string, OperatorDTO> dto in operatorDTOs)
+                dto.Value.pmAdress = ip;
 
             TcpChannel channel = new TcpChannel(port);
             ChannelServices.RegisterChannel(channel, false);
@@ -49,6 +53,7 @@ namespace DADSTORM
             pm.setUpOperators();
 
             log.writeLine("Welcome to the PuppetMaster Shell.");
+            log.writeLine("Do not be afraid to write \"help\" if needed.");
             //sh.start(commands);
             sh.start();
             log.writeLine("Goodbye.");
@@ -93,8 +98,8 @@ namespace DADSTORM
 
         private void createReplica(string PCSaddress, OperatorDTO op) {
             if(op.next_op_addresses[0] != "X")
-                logger.writeLine("Creating replica " + op.curr_rep + " for " + op.op_id + " with next address:" + op.next_op_addresses[0]);
-            else logger.writeLine("Creating replica " + op.curr_rep + " for " + op.op_id + ". This operator is final.");
+                logger.writeLine("Creating replica " + op.curr_rep);
+            else logger.writeLine("Creating replica " + op.curr_rep);
 
             ProcessCreationService pcs = getPCS(PCSaddress, op);
             if (pcs == null)
@@ -319,7 +324,7 @@ namespace DADSTORM
 
     };
 
-    class PuppetmasterListener : MarshalByRefObject
+    class PuppetmasterListener : MarshalByRefObject, ILogger
     {
         private static Logger log;
 
@@ -328,14 +333,19 @@ namespace DADSTORM
             log = _log;
         }
 
-        public void writeLine(string str)
+        public void writeLine(string str, params object[] args)
         {
-            log.writeLine(str);
+            log.writeLine(str, args);
         }
 
-        public void write(string str)
+        public void write(string str, params object[] args)
         {
-            log.write(str);
+            log.write(str, args);
+        }
+
+        override public object InitializeLifetimeService()
+        {
+            return null;
         }
     }
 }
