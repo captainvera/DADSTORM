@@ -88,11 +88,6 @@ namespace DADSTORM
             _pm.start(str);
         }
 
-        public void stopOP(string str)
-        {
-            _pm.stop(str);
-        }
-
         public void wait(int time)
         {
             _pm.wait(time);

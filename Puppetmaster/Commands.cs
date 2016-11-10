@@ -60,20 +60,6 @@ namespace DADSTORM
         }
     }
 
-    class StopCommand : Command
-    {
-        public StopCommand(Shell sh) : base(sh, "stop") { }
-
-        public override void execute(string[] list)
-        {
-            if (list.Length != 2)
-            {
-                Console.WriteLine("[Usage]" + getID() + " operator_id");
-            }
-            else Shell().stopOP(list[1]);
-        }
-    }
-
     class IntervalCommand : Command
     {
         public IntervalCommand(Shell sh) : base(sh, "interval") { }

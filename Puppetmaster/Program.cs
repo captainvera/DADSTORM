@@ -172,26 +172,6 @@ namespace DADSTORM
             }
         }
 
-        public void stop(string op)
-        {
-            logger.writeLine("stop " + op);
-            OperatorDTO oper = getOperator(op);
-            if (oper != null)
-            {
-                foreach (Replica rep in getReplicas(oper))
-                {
-                    try
-                    {
-                        rep.ping("IS TIME TO STAHP");
-                    }
-                    catch (System.Net.Sockets.SocketException e)
-                    {
-                        logger.writeLine("OP" + oper.op_id + " has an unreachable replica.");
-                    }
-                }
-            }
-        }
-
         public void wait(int time)
         {
             logger.writeLine("wait " + time);
