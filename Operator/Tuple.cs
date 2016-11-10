@@ -14,6 +14,7 @@ namespace DADSTORM
 
         public Tuple(int size)
         {
+            _size = size; 
             _items = new string[size];
         }
 
@@ -63,6 +64,11 @@ namespace DADSTORM
             res += ">";
 
             return res;
+        }
+
+        public int getSize()
+        {
+            return _size;
         }
     }
 }

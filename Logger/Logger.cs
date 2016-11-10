@@ -26,7 +26,7 @@ namespace DADSTORM
 
         private string id;
 
-        static int level = 1;
+        static int level = 2;
 
         public Logger(string _id)
         {
@@ -56,7 +56,7 @@ namespace DADSTORM
         public static void debug(string s, params object[] args)
         {
             if(level > 1)
-                Console.Write("[DEBUG] " + String.Format(s, args));
+                Console.WriteLine("[DEBUG] " + String.Format(s, args));
         }
     }
 

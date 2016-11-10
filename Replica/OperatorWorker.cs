@@ -65,6 +65,14 @@ namespace DADSTORM
             }
         }
 
+        public void haltAll(int time)
+        {
+            foreach(OperatorWorker ow in _workers)
+            {
+                ow.halt(time);
+            }
+        }
+
         public void freezeAll()
         {
             onFreeze(EventArgs.Empty);
@@ -111,6 +119,9 @@ namespace DADSTORM
         //Internal state variables
         //Boolean read and writes are atomic, no need for thread locking
         private bool _freeze;
+        private bool _halt;
+        private int _haltTime;
+
         ManualResetEvent _unfreezeSignal;
 
         public OperatorWorker(OperatorWorkerPool parentPool, IOperator op, BlockingCollection<Tuple> input, BlockingCollection<Tuple> output)
@@ -122,6 +133,7 @@ namespace DADSTORM
 
             _unfreezeSignal = new ManualResetEvent(false);
             _freeze = false;
+            _halt = false;
 
             parentPool.freezeEventRaised += new freezeEventHandler(onFreeze);
             parentPool.unfreezeEventRaised += new unfreezeEventHandler(onUnfreeze);
@@ -174,6 +186,10 @@ namespace DADSTORM
                 Logger.writeLine("Received freeze event. Freezing...", "Thread" + Thread.CurrentThread.ManagedThreadId);
                 waitFrozen();
             }
+            else if(_halt)
+            {
+                _halt = false;
+            }
         }        
 
         public void waitFrozen()
@@ -183,6 +199,12 @@ namespace DADSTORM
             _unfreezeSignal.Reset();
             Logger.writeLine("Unfreeze signal received! Restoring working state...", "Thread" + Thread.CurrentThread.ManagedThreadId);
             process();
+        }
+
+        public void halt(int time)
+        {
+            _halt = true;
+            _haltTime = time;
         }
     }
 }

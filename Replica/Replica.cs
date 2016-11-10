@@ -59,7 +59,7 @@ namespace DADSTORM {
     //Should we have a broker between replica process and replica?
     public class Replica : MarshalByRefObject
     {
-        private RemoteLogger log;
+        private ILogger log;
 
         /** ------------------ Replica Configuration ---------------------- **/
 
@@ -97,11 +97,7 @@ namespace DADSTORM {
             semantics = dto.semantics;
             op_spec = dto.op_spec.ToArray();
 
-            
-            log = new RemoteLogger("Replica" + id);
-
-            if (logging == "full")
-                log.connect(dto.pmAdress);
+            log = new Logger("Replica" + id);
 
             //Routing Strategy for this replica
             //TODO::XXX::Get routing strategy instance from routing parameter
@@ -109,13 +105,15 @@ namespace DADSTORM {
 
             //op = new op(op_spec);
             //TODO::XXX::Get Operator instance from op_spec parameter
-            op = new Operator(dto.op_spec[0], dto.op_spec.GetRange(1,dto.op_spec.Count-1).ToArray());
+            //op = new Operator(dto.op_spec[0], dto.op_spec.GetRange(1,dto.op_spec.Count-1).ToArray());
+            op = new DUP();
 
             //Multithreading setup
             input_buffer = new BlockingCollection<Tuple>();
             output_buffer = new BlockingCollection<Tuple>();
             op_pool = new OperatorWorkerPool(4, op, input_buffer, output_buffer);
-            
+
+            op_pool.start();
             log.writeLine("Replica " + id + " is now online but not processing");
         }
 
@@ -156,7 +154,7 @@ namespace DADSTORM {
 
         public string ping(string value)
         {
-            log.writeLine("ping: " + value);
+            log.writeLine("Received (echo) ping command -\n " + value);
             return value;
         }
 
@@ -167,11 +165,15 @@ namespace DADSTORM {
 
         public void freeze()
         {
+            log.writeLine("Received freeze command");
+            //RemotingServices.Disconnect(this);
             op_pool.freezeAll(); 
         }
 
         public void unfreeze()
         {
+            log.writeLine("Received unfreeze command");
+            //RemotingServices.Connect(typeof(Replica), "op", this);
             op_pool.unfreezeAll(); 
         }
 
@@ -185,6 +187,7 @@ namespace DADSTORM {
 
         public void start()
         {
+            log.writeLine("Received start command");
             running = true;
             op_pool.start();
         }
@@ -196,19 +199,22 @@ namespace DADSTORM {
         }
 
         //TODO::XXX::FIXME -> check if frozen 
-        public string status()
+        public void status()
         {
+            log.writeLine("Received status command");
             string res = "Replica " + id + " - ONLINE -";
             if (running)
                 res += " PROCESSING";
             else
                 res += " WAITING";
-            return res;
+            log.writeLine(res);
         }
 
-        public void interval(int time)
+        public int interval(int time)
         {
-            //TODO::XXX::Implement me
+            log.writeLine("Received interval command for " + time + " ms");
+            op_pool.haltAll(time);
+            return 1337 + time;
         }
     }
 }

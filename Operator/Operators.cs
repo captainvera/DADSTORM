@@ -19,7 +19,9 @@ namespace DADSTORM
             int field = 0;
             switch (opname)
             {
-
+                //Argument number checking?
+                //This is a OperatorFactory / OperatorSource, not an Operator
+                //IOperator op = OperatorFactory.create(OPNAME, ARGS);
                 case "DUP":
                     Logger.writeLine("DUP operator started.", "OperatorSelector");
                     op = new DUP();
