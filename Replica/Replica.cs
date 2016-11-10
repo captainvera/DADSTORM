@@ -64,6 +64,7 @@ namespace DADSTORM {
         /** ------------------ Replica Configuration ---------------------- **/
 
         private Boolean primary;
+        private Boolean running;
         private string id, port, replication, routing, address, logging, semantics;
         private string[] output, op_spec;
 
@@ -85,6 +86,7 @@ namespace DADSTORM {
         {
             //Replica configuration
             primary = false;
+            running = false;
             id = dto.op_id;
             port = dto.ports[dto.curr_rep];
             output = dto.next_op_addresses.ToArray();
@@ -109,10 +111,8 @@ namespace DADSTORM {
             input_buffer = new BlockingCollection<Tuple>();
             output_buffer = new BlockingCollection<Tuple>();
             op_pool = new OperatorWorkerPool(4, op, input_buffer, output_buffer);
-
-            op_pool.start();
             
-            log.writeLine("Replica " + id + " is now online");
+            log.writeLine("Replica " + id + " is now online but not processing");
         }
 
         public void input(Tuple t)
@@ -176,6 +176,34 @@ namespace DADSTORM {
             log.writeLine("Processing file: " + file);
             TupleFileReaderWorker tfrw = new TupleFileReaderWorker(input_buffer, file);
             tfrw.start();
+        }
+
+        public void start()
+        {
+            running = true;
+            op_pool.start();
+        }
+
+        public void crash()
+        {
+            log.writeLine("Received crash command... Sayonara!");
+            System.Environment.Exit(1);
+        }
+
+        //TODO::XXX::FIXME -> check if frozen 
+        public string status()
+        {
+            string res = "Replica " + id + " - ONLINE -";
+            if (running)
+                res += " PROCESSING";
+            else
+                res += " WAITING";
+            return res;
+        }
+
+        public void interval(int time)
+        {
+            //TODO::XXX::Implement me
         }
     }
 }

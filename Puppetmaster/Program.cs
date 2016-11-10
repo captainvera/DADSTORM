@@ -171,8 +171,7 @@ namespace DADSTORM
                 foreach(Replica rep in getReplicas(oper))
                 {
                     try { 
-                        rep.ping("IS TIME TO GO");
-                        //rep.start();
+                        rep.start();
                     }
                     catch (System.Net.Sockets.SocketException e)
                     {
@@ -224,8 +223,7 @@ namespace DADSTORM
                     //TODO: should say actual status (stopped/started/etc)
                     try
                     {
-                        if (rep.ping("ping") == "ping")
-                            logger.writeLine("Replica " + i + " of " + entry.Value.op_id + " is alive.");
+                            logger.writeLine(rep.status());
                     }
                     catch (Exception e)
                     {
@@ -247,8 +245,7 @@ namespace DADSTORM
                 foreach (Replica rep in getReplicas(oper))
                 {
                 try { 
-                    rep.ping("Recess time is:" + time);
-                    //rep.interval(time); 
+                    rep.interval(time); 
                 }
                     catch (System.Net.Sockets.SocketException e)
                 {
@@ -267,8 +264,7 @@ namespace DADSTORM
             if(oper != null)
             {
                 try { 
-                    getReplica(oper.address[rep]).ping("Crash and burn");
-                    //getReplica(oper.address[rep]).crash();
+                    getReplica(oper.address[rep]).crash();
                 }
                     catch (System.Net.Sockets.SocketException e)
                 {
@@ -287,8 +283,7 @@ namespace DADSTORM
             {
                 try
                 {
-                    getReplica(oper.address[rep]).ping("Frostnova");
-                    //getReplica(oper.address[rep]).freeze();
+                    getReplica(oper.address[rep]).freeze();
                 }
                 catch (System.Net.Sockets.SocketException e)
                 {
@@ -306,8 +301,8 @@ namespace DADSTORM
             {
                 try
                 {
-                    getReplica(oper.address[rep]).ping("Melt");
-                    //getReplica(oper.address[rep]).freeze();
+                    //getReplica(oper.address[rep]).ping("Melt");
+                    getReplica(oper.address[rep]).unfreeze();
                 }
                 catch (System.Net.Sockets.SocketException e)
                 {
