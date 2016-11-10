@@ -7,110 +7,141 @@ using System.Runtime.Remoting.Channels.Tcp;
 using System.Runtime.Remoting.Channels;
 using System.Runtime.Remoting;
 using System.Collections;
+using System.Xml.Serialization;
+using System.IO;
+using System.Collections.Concurrent;
 
-namespace DADSTORM
-{
-    public class ReplicaProcess
-    {
-        public static void Main(string[] args)
-        {
-            if(args.Length < 3)
-            {
-                for (int i = 0; i < args.Length; i++)
-                {
-                    Console.WriteLine(i + "th arg= " + args[i]);
-                }
-                
+namespace DADSTORM {
+    public class ReplicaProcess {
+        public static void Main(string[] args) {
+            if (args.Length < 1) {
                 Console.WriteLine("Wrong number of arguments provided, exiting.");
                 Console.ReadLine();
                 Environment.Exit(1);
             }
+            string dtoXml = args[0];
 
-            string id = args[0];
-            string port = args[1];
-            List<string> outputs = new List<string>();
+            OperatorDTO dto = Deserialize<OperatorDTO>(dtoXml);
 
-            //This are our output replicas!
-            for(int i = 2; i < args.Length; i++)
-            {
-                outputs.Add(args[i]);
-            }
-
-            Logger.writeLine("Processed " + outputs.Count + " output replicas", "ReplicaProcess");
+            Logger.writeLine("Processed " + dto.next_op_addresses.Count + " output replicas", "ReplicaProcess");
 
             //Might need proper implementation for naming: CHECK PROJ INSTR
-            string name = "Replica" + id;
+            string name = "Replica" + dto.op_id;
+            string port = dto.ports[dto.curr_rep];
 
+            IDictionary propBag = new Hashtable();
+            propBag["port"] = Int32.Parse(port);
+            propBag["name"] = "tcpClientServer";  // here enter unique channel name
 
-            TcpChannel channel = new TcpChannel(Int32.Parse(port));
+            TcpChannel channel = new TcpChannel(propBag, new BinaryClientFormatterSinkProvider(), new BinaryServerFormatterSinkProvider());
             ChannelServices.RegisterChannel(channel, false);
 
-            Replica rep = new Replica(id, port.Replace("10", "11"), outputs.ToArray());
+            Replica rep = new Replica(dto);
+
             RemotingServices.Marshal(rep, "op", typeof(Replica));
             Logger.writeLine("Registered with name:" + name, "ReplicaProcess");
+
+            rep.process();
 
             Console.ReadLine();
         }
 
-        public static String getPath()
-        {
+        public static String getPath() {
             return Environment.CurrentDirectory;
         }
-    }
 
+        public static OperatorDTO Deserialize<OperatorDTO>(string opXml) {
+            XmlSerializer xmlSerializer = new XmlSerializer(typeof(OperatorDTO));
+            StringReader textReader = new StringReader(opXml);
+            return (OperatorDTO)xmlSerializer.Deserialize(textReader);
+        }
+}
     //Should we have a broker between replica process and replica?
     public class Replica : MarshalByRefObject
     {
-        private Logger log;
+        private RemoteLogger log;
 
-        private string id, port;
-        private string[] output;
+        /** ------------------ Replica Configuration ---------------------- **/
+
         private Boolean primary;
+        private string id, port, replication, routing, address, logging, semantics;
+        private string[] output, op_spec;
+
+        /** ------------------- Multithreading ---------------------------- **/
+
+        OperatorWorkerPool op_pool;
+        BlockingCollection<Tuple> input_buffer;
+        BlockingCollection<Tuple> output_buffer;
+
+        /** ------------------- Replica Abstraction ----------------------- **/
 
         private IOperator op;
         private IRoutingStrategy router;
-
         private TcpChannel channel;
 
-        public Replica(string _id, string _port, string[] _next)
+        /** --------------------------------------------------------------- **/
+
+        public Replica(OperatorDTO dto)
         {
             //Replica configuration
             primary = false;
-            id = _id;
-            port = _port;
-            output = _next;
+            id = dto.op_id;
+            port = dto.ports[dto.curr_rep];
+            output = dto.next_op_addresses.ToArray();
+            replication = dto.rep_fact;
+            routing = dto.routing;
+            address = dto.address[dto.curr_rep];
+            logging = dto.logging;
+            semantics = dto.semantics;
+            op_spec = dto.op_spec.ToArray();
 
-            log = new Logger("Replica" + id);
+            
+            log = new RemoteLogger("Replica" + id);
+
+            if (logging == "full")
+                log.connect(dto.pmAdress);
 
             //Routing Strategy for this replica
+            //TODO::XXX::Get routing strategy instance from routing parameter
             router = new PrimaryRoutingStrategy(this);
+
+            //op = new op(op_spec);
+            //TODO::XXX::Get Operator instance from op_spec parameter
             op = new DUP();
 
-            log.writeLine("Initialized Replica " + id + " with out port " + port);
+            //Multithreading setup
+            input_buffer = new BlockingCollection<Tuple>();
+            output_buffer = new BlockingCollection<Tuple>();
+            op_pool = new OperatorWorkerPool(4, op, input_buffer, output_buffer);
 
-            //Client TCP Channel to connect with other replicas
-            //Fix Int32 parse -> more security plz
-            IDictionary propBag = new Hashtable(); 
-            propBag["port"] = Int32.Parse(port);
-            propBag["name"] = "tcpOut";  // here enter unique channel name
-
-            channel = new TcpChannel(propBag, new BinaryClientFormatterSinkProvider(), null);
-            ChannelServices.RegisterChannel(channel, false);
-
+            op_pool.start();
+            
             log.writeLine("Replica " + id + " is now online");
         }
 
         public void input(Tuple t)
         {
-            log.writeLine("Received input: " + t.get(0));
-            Tuple res = op.process(t);
-            router.route(res);
+            log.writeLine("Received tuple");
+            input_buffer.Add(t);
         }
 
+        public void process()
+        {
+            Tuple data;
+            while (true)
+            {
+                data = output_buffer.Take();
+                log.writeLine("Sending tuple");
+                router.route(data);
+            }
+        }
+
+        //private??
         public void send(Tuple t, string dest)
         {
             Replica next = (Replica)Activator.GetObject(typeof(Replica), dest);
             next.input(t);
+            log.writeLine("Replica"+ id + " " + t.toString());
         }
 
         public Boolean isPrimary()
@@ -132,6 +163,24 @@ namespace DADSTORM
         override public object InitializeLifetimeService()
         {
             return null;
+        }
+
+        public void freeze()
+        {
+            op_pool.freezeAll(); 
+        }
+
+        public void unfreeze()
+        {
+            op_pool.unfreezeAll(); 
+        }
+
+        public void readFile()
+        {
+            string file = @"..\..\..\tweeters.dat";
+            log.writeLine("Processing file: " + file);
+            TupleFileReaderWorker tfrw = new TupleFileReaderWorker(input_buffer, file);
+            tfrw.start();
         }
     }
 }

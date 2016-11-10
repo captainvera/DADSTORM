@@ -44,9 +44,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="OperatorWorker.cs" />
     <Compile Include="Replica.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RoutingStrategy.cs" />
+    <Compile Include="SemanticStrategy.cs" />
+    <Compile Include="TupleFileReader.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Logger\Logger.csproj">

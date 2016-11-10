@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 using System.Diagnostics;
 using System.Threading;
 using DADSTORM;
+using System.Xml.Serialization;
+using System.IO;
 
 namespace DADSTORM
 {
@@ -27,15 +29,23 @@ namespace DADSTORM
             string t = ReplicaProcess.getPath() + "\\Replica.exe";
             p.StartInfo.FileName = t;
 
-            //Argument order: id , port (...?)
-            const string separator = " ";
-            string outputs = string.Join(separator, op.next_op_addresses);
-
-            p.StartInfo.Arguments = op.op_id + " " + op.ports[op.curr_rep] + " " + outputs;
+            //Writing DTO to xml string
+            string serializedDTO = Serialize(op);
+            System.Console.WriteLine(serializedDTO);
+            serializedDTO = serializedDTO.Replace("\"", "\\\"");
+            p.StartInfo.Arguments = "\""+ serializedDTO + "\"";
 
             p.Start();
 
             log.writeLine("Replica " + op.op_id + " created");
+        }
+
+        //Converts DTO to XML and returns it as string
+        public static string Serialize<OperatorDTO>(OperatorDTO op) {
+            XmlSerializer xmlSerializer = new XmlSerializer(typeof(OperatorDTO));
+            StringWriter textWriter = new StringWriter();
+            xmlSerializer.Serialize(textWriter, op);
+            return textWriter.ToString();
         }
 
         override public object InitializeLifetimeService()

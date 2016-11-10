@@ -5,6 +5,9 @@ using System.Linq;
 using System.Runtime.Remoting;
 using System.Runtime.Remoting.Channels;
 using System.Runtime.Remoting.Channels.Tcp;
+using System.Runtime.Remoting.Messaging;
+using System.Runtime.Remoting.Messaging;
+using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -14,89 +17,79 @@ namespace DADSTORM
 {
     class Program
     {
-        private static Logger log;
 
         static void Main(string[] args)
         {
-            int port = 10001;
-
-            
-
-            log = new Logger("PuppetMaster");
+            Logger log = new Logger("PuppetMaster");
             log.writeLine("Starting Puppetmaster");
             log.writeLine("Parsing configuration file");
-            
-            Parser parser = new Parser();
 
+            Parser parser = new Parser(@"..\..\..\dadstorm.config");
             string[] commands =  parser.readCommands();
+            Dictionary<string, OperatorDTO> operatorDTOs = parser.makeOperatorDTOs();
 
-            Console.WriteLine("commands:");
-            foreach (string str in commands)
-                Console.WriteLine(str);
-
-            Dictionary<string, OperatorDTO> operatorDTOs = parser.makeOperatorDTOs(parser.readConfigOps());
-            log.writeLine("Done");
-
-            //TODO put something on config file
-            Console.WriteLine("What is the current IP address of the puppetmaster?");
-            string ip = Console.ReadLine();
-
-            ip = string.Concat("tcp://", ip, ":", port, "/pml");
-
-            log.writeLine("Current ip:" + ip);
 
             PuppetmasterListener pml = new PuppetmasterListener(log);
+            int port = 10001;
 
+            //TODO put something on config file QUESTION, AQUI USAR LOGGER?
+            Console.WriteLine("What is the current IP address of the puppetmaster?");
+            string ip = Console.ReadLine();
+            ip = string.Concat("tcp://", ip, ":", port, "/pml");
+            log.writeLine("Located at: " + ip);
+            
+            //TODO take this out
+            foreach(KeyValuePair<string, OperatorDTO> dto in operatorDTOs)
+                dto.Value.pmAdress = ip;
 
             TcpChannel channel = new TcpChannel(port);
-            log.writeLine("PuppetMaster on port:" + port);
-
             ChannelServices.RegisterChannel(channel, false);
             RemotingServices.Marshal(pml, "pml", typeof(PuppetmasterListener));
 
-
             Puppetmaster pm = new Puppetmaster(operatorDTOs, log);
+
+            Shell sh = new Shell(pm);
 
             pm.setUpOperators();
 
-            Shell sh = new Shell(pm);
-            //Want the script to be executed? uncomment following line
+            log.writeLine("Welcome to the PuppetMaster Shell.");
+            log.writeLine("Do not be afraid to write \"help\" if needed.");
             //sh.start(commands);
-
             sh.start();
-
-            log.writeLine("shell stopped");
-            System.Threading.Thread.Sleep(10000);
-
-            log.writeLine("shell restarted");
-            sh.start(commands);
-
-            pm.test();
+            log.writeLine("Goodbye.");
 
         }
     }
 
-    class Puppetmaster {
-
+    class Puppetmaster
+    {
         Logger logger;
         public Dictionary<string, OperatorDTO> operatorDTOs;
+        public delegate string PingAsyncDelegate(string str);
+        public delegate void IntervalAsyncDelegate(int time);
+        public delegate void VoidAsyncDelegate();
+        static string pingResult;
 
-        public Puppetmaster(Dictionary<string, OperatorDTO> opDTOs, Logger log) {
+        public Puppetmaster(Dictionary<string, OperatorDTO> opDTOs, Logger log)
+        {
             operatorDTOs = opDTOs;
             logger = log;
         }
 
-        public void setUpOperators() {
+        public void setUpOperators()
+        {
             logger.writeLine("Setting up operators.");
-            foreach (OperatorDTO op in operatorDTOs.Values) {
+            foreach (OperatorDTO op in operatorDTOs.Values)
+            {
                 createOperator(op);
             }
         }
 
-        private void createOperator(OperatorDTO op) {
+        private void createOperator(OperatorDTO op)
+        {
             logger.writeLine("Creating operator " + op.op_id);
-            for(int i=0; i<op.address.Count; i++) {
-                //logger.writeLine("Reaching PCS at {0} to set up ", PCSaddress, op.op_id);
+            for(int i=0; i<op.address.Count; i++)
+            {
                 string PCSaddress = Parser.parseIPFromAddress(op.address[i]) + ":10000/pcs";
                 op.curr_rep = i;
                 createReplica(PCSaddress, op);
@@ -105,13 +98,14 @@ namespace DADSTORM
 
         private void createReplica(string PCSaddress, OperatorDTO op) {
             if(op.next_op_addresses[0] != "X")
-                logger.writeLine("Creating replica " + op.curr_rep + " for " + op.op_id + " with next address:" + op.next_op_addresses[0]);
-            else logger.writeLine("Creating replica " + op.curr_rep + " for " + op.op_id + ". This operator is final.");
+                logger.writeLine("Creating replica " + op.curr_rep);
+            else logger.writeLine("Creating replica " + op.curr_rep);
 
             ProcessCreationService pcs = getPCS(PCSaddress, op);
             if (pcs == null)
                 logger.writeLine("Couldn't reach PCS.");
-            try { 
+            try
+            { 
                 pcs.createProcess(op);
             }
             catch (System.Net.Sockets.SocketException e)
@@ -163,42 +157,21 @@ namespace DADSTORM
 
         public void start(string op)
         {
-            logger.writeLine("start " + op);
+            logger.writeLine("Start " + op);
             OperatorDTO oper = getOperator(op);
             if (oper != null)
             {
                 foreach(Replica rep in getReplicas(oper))
                 {
-                    try { 
-                        rep.ping("IS TIME TO GO");
-                        //rep.start();
+                    try {
+                        /*VoidAsyncDelegate startDel = new VoidAsyncDelegate(rep.start);
+                        IAsyncResult remAr = startDel.BeginInvoke(null, null);*/
+                        logger.writeLine("Implement me. (Start)");
                     }
                     catch (System.Net.Sockets.SocketException e)
                     {
                         logger.writeLine(oper.op_id + " has an unreachable replica.");
                     }
-                }
-
-            }
-        }
-
-        public void stop(string op)
-        {
-            logger.writeLine("stop " + op);
-            OperatorDTO oper = getOperator(op);
-            if (oper != null)
-            {
-                foreach (Replica rep in getReplicas(oper))
-                {
-                    try
-                    {
-                        rep.ping("IS TIME TO STAHP");
-                    }
-                    catch (System.Net.Sockets.SocketException e)
-                    {
-                        logger.writeLine("OP" + oper.op_id + " has an unreachable replica.");
-                    }
-                    //rep.stop();
                 }
 
             }
@@ -212,24 +185,23 @@ namespace DADSTORM
     
         public void status()
         {
-
+            logger.writeLine("Status:");
             foreach (KeyValuePair<string, OperatorDTO> entry in operatorDTOs)
             {
                 for (int i = 0; i < entry.Value.address.Count; i++)
                 {
-                    logger.writeLine("Getting replica with address:" + entry.Value.address[i]);
-                    Replica rep = getReplica(entry.Value.address[i]);
-                    if (rep == null) logger.writeLine("ABORT ABORT");
-                    //TODO: should say actual status (stopped/started/etc)
                     try
                     {
-                        if (rep.ping("ping") == "ping")
-                            logger.writeLine("Replica " + i + " of " + entry.Value.op_id + " is alive.");
+                        /* Replica replica = getReplica(entry.Value.address[i]); ;
+                         VoidAsyncDelegate statusDel = new VoidAsyncDelegate(replica.status);
+                         IAsyncResult remAr = statusDel.BeginInvoke(null, null); */
+                        logger.writeLine("Implement me. (Status)");
+
                     }
-                    catch (Exception e)
+                    catch (System.Net.Sockets.SocketException e)
                     {
                         //TODO apanhar excepçoes especificas
-                        logger.writeLine("Replica " + i + " of " + entry.Value.op_id + " is dead.");
+                        logger.writeLine("Replica " + i + " of " + entry.Value.op_id + " is unreachable.");
                     }
 
                 }
@@ -245,10 +217,12 @@ namespace DADSTORM
             {
                 foreach (Replica rep in getReplicas(oper))
                 {
-                try { 
-                    rep.ping("Recess time is:" + time);
-                    //rep.interval(time); 
-                }
+                try {
+                        /*
+                        IntervalAsyncDelegate intervalDel = new IntervalAsyncDelegate(rep.interval);
+                        IAsyncResult remAr = intervalDel.BeginInvoke(time, null, null);*/
+                        logger.writeLine("Implement me. (Interval)");
+                    }
                     catch (System.Net.Sockets.SocketException e)
                 {
                     logger.writeLine(oper.op_id + " has an unreachable replica.");
@@ -265,9 +239,11 @@ namespace DADSTORM
             OperatorDTO oper = getOperator(op);
             if(oper != null)
             {
-                try { 
-                    getReplica(oper.address[rep]).ping("Crash and burn");
-                    //getReplica(oper.address[rep]).crash();
+                try {
+                    /*Replica replica = getReplica(oper.address[rep]);
+                    VoidAsyncDelegate crashDel = new VoidAsyncDelegate(replica.crash);
+                    IAsyncResult remAr = crashDel.BeginInvoke(null, null);*/
+                    logger.writeLine("Implement me. (CRASH)");
                 }
                     catch (System.Net.Sockets.SocketException e)
                 {
@@ -286,8 +262,9 @@ namespace DADSTORM
             {
                 try
                 {
-                    getReplica(oper.address[rep]).ping("Frostnova");
-                    //getReplica(oper.address[rep]).freeze();
+                    Replica replica = getReplica(oper.address[rep]);
+                    VoidAsyncDelegate freezeDel = new VoidAsyncDelegate(replica.freeze);
+                    IAsyncResult remAr = freezeDel.BeginInvoke(null, null);
                 }
                 catch (System.Net.Sockets.SocketException e)
                 {
@@ -305,8 +282,9 @@ namespace DADSTORM
             {
                 try
                 {
-                    getReplica(oper.address[rep]).ping("Melt");
-                    //getReplica(oper.address[rep]).freeze();
+                    Replica replica = getReplica(oper.address[rep]);
+                    VoidAsyncDelegate unfreezeDel = new VoidAsyncDelegate(replica.unfreeze);
+                    IAsyncResult remAr = unfreezeDel.BeginInvoke(null, null);
                 }
                 catch (System.Net.Sockets.SocketException e)
                 {
@@ -316,21 +294,37 @@ namespace DADSTORM
             }
         }
 
-        public void test()
+        public void readFile(string op, int rep)
         {
-            for (int i = 999; i > 0; i--)
+            logger.writeLine("Read file...");
+
+            OperatorDTO oper = getOperator(op);
+            if (oper != null)
             {
-                Tuple t = new Tuple(1);
-                t.set(0, i + " bottles of beer on the wall, " + i + " bottles of beer, take one down, pass it around you got " + (i - 1) + " bottles of beer on the wall!");
-                Replica rep = getReplica(operatorDTOs["OP1"].address[0]);
-                rep.input(t);
-                System.Threading.Thread.Sleep(100);
+                try
+                {
+                    Replica replica = getReplica(oper.address[rep]);
+                    VoidAsyncDelegate readFileDel = new VoidAsyncDelegate(replica.readFile);
+                    IAsyncResult remAr = readFileDel.BeginInvoke(null, null);
+                }
+                catch (System.Net.Sockets.SocketException e)
+                {
+
+                    logger.writeLine(oper.op_id + " replica " + rep + " is unreachable.");
+                }
             }
+        }
+
+        public static void PingAsyncCallback(IAsyncResult res)
+        {
+            PingAsyncDelegate delegat = (PingAsyncDelegate)((AsyncResult)res).AsyncDelegate;
+            pingResult = delegat.EndInvoke(res);
+            return;
         }
 
     };
 
-    class PuppetmasterListener : MarshalByRefObject
+    class PuppetmasterListener : MarshalByRefObject, ILogger
     {
         private static Logger log;
 
@@ -339,14 +333,19 @@ namespace DADSTORM
             log = _log;
         }
 
-        public void writeLine(string str)
+        public void writeLine(string str, params object[] args)
         {
-            log.writeLine(str);
+            log.writeLine(str, args);
         }
 
-        public void write(string str)
+        public void write(string str, params object[] args)
         {
-            log.write(str);
+            log.write(str, args);
+        }
+
+        override public object InitializeLifetimeService()
+        {
+            return null;
         }
     }
 }
