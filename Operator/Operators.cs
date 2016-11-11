@@ -131,11 +131,18 @@ namespace DADSTORM
         public Tuple process(Tuple t)
         {
 
-            object result = _method.Invoke(_instance, t.toArray());
+            List<string> listargs = t.toArray().ToList<string>();
 
-            Type returnType = _method.ReturnType;
+            object[] args = new object[] { listargs };
+            object result = _method.Invoke(_instance, args);
 
-            return (Tuple)result;
+            IList<IList<string>> lists = (IList<IList<string>>)result;
+
+            Tuple ret = new Tuple(lists[0].ToArray<string>());
+
+            Console.WriteLine("PANDA PANDA PANDA PANDA");
+
+            return ret;
         }
 
     }

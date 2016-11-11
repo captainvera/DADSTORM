@@ -24,6 +24,12 @@ namespace DADSTORM
             
         }
 
+        public Tuple(string[] str)
+        {
+            _items = str;
+            _size = str.Count();
+        }
+
         public void setFromArrayCopy(string[] items)
         {
             if(items.Length == _items.Length)
