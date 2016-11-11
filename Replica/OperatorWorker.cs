@@ -12,6 +12,22 @@ namespace DADSTORM
     public delegate void freezeEventHandler(object sender, EventArgs e);
     public delegate void unfreezeEventHandler(object sender, EventArgs e);
     public delegate void crashEventHandler(object sender, EventArgs e);
+    public delegate void intervalEventHandler(object sender, IntervalEventArgs e);
+
+    public class IntervalEventArgs : EventArgs
+    {
+        private readonly int _time;
+
+        public IntervalEventArgs(int time)
+        {
+            _time = time;
+        }
+
+        public int time
+        {
+            get { return _time; }
+        }
+    }
 
     class OperatorWorkerPool
     {
@@ -19,6 +35,7 @@ namespace DADSTORM
         public event freezeEventHandler freezeEventRaised;
         public event unfreezeEventHandler unfreezeEventRaised;
         public event crashEventHandler crashEventRaised;
+        public event intervalEventHandler intervalEventRaised;
 
         protected virtual void onFreeze(EventArgs e)
         {
@@ -36,6 +53,12 @@ namespace DADSTORM
         {
             if (unfreezeEventRaised != null)
                 unfreezeEventRaised(this, e);
+        }
+
+        protected virtual void onInterval(IntervalEventArgs e)
+        {
+            if (intervalEventRaised != null)
+                intervalEventRaised(this, e);
         }
         /** ------------------------------------------------------  **/
 
@@ -65,12 +88,9 @@ namespace DADSTORM
             }
         }
 
-        public void haltAll(int time)
+        public void intervalAll(int time)
         {
-            foreach(OperatorWorker ow in _workers)
-            {
-                ow.halt(time);
-            }
+            onInterval(new IntervalEventArgs(time));
         }
 
         public void freezeAll()
@@ -101,9 +121,15 @@ namespace DADSTORM
         
         public void onCrash(object sender, EventArgs e)
         {
-            //TODO::XXX::Maybe kill the threads in a safer way?
             _source.Cancel();
             _wthread.Abort();
+        }
+
+        public void onInterval(object sender, IntervalEventArgs e)
+        {
+            _intervalTime = e.time;
+            _interval = true;
+            _source.Cancel();
         }
         /** ------------------------------------------------------  **/
 
@@ -119,8 +145,8 @@ namespace DADSTORM
         //Internal state variables
         //Boolean read and writes are atomic, no need for thread locking
         private bool _freeze;
-        private bool _halt;
-        private int _haltTime;
+        private bool _interval;
+        private int _intervalTime;
 
         ManualResetEvent _unfreezeSignal;
 
@@ -133,11 +159,12 @@ namespace DADSTORM
 
             _unfreezeSignal = new ManualResetEvent(false);
             _freeze = false;
-            _halt = false;
+            _interval = false;
 
             parentPool.freezeEventRaised += new freezeEventHandler(onFreeze);
             parentPool.unfreezeEventRaised += new unfreezeEventHandler(onUnfreeze);
             parentPool.crashEventRaised += new crashEventHandler(onCrash);
+            parentPool.intervalEventRaised += new intervalEventHandler(onInterval);
         }
 
         public void start()
@@ -173,14 +200,14 @@ namespace DADSTORM
                     }
                     else
                     {
-                        Log.writeLine("Null tuple result, ignoring", "Thread" + Thread.CurrentThread.ManagedThreadId);
+                        Log.debug("Null tuple result, ignoring", "Thread" + Thread.CurrentThread.ManagedThreadId);
 
                     }
                 }
             }
             catch (OperationCanceledException e)
             {
-                Log.writeLine("Operation cancelled. Checking if there is data to restore.", "Thread" + Thread.CurrentThread.ManagedThreadId);
+                Log.info("Operation cancelled. Checking if there is data to restore.", "Thread" + Thread.CurrentThread.ManagedThreadId);
                 if (res != null)
                 {
                     Log.writeLine("Tuple restored to input buffer", "Thread" + Thread.CurrentThread.ManagedThreadId);
@@ -190,28 +217,28 @@ namespace DADSTORM
 
             if (_freeze)
             {
-                Log.writeLine("Received freeze event. Freezing...", "Thread" + Thread.CurrentThread.ManagedThreadId);
+                _freeze = false;
+                Log.info("Received freeze event. Freezing...", "Thread" + Thread.CurrentThread.ManagedThreadId);
                 waitFrozen();
             }
-            else if(_halt)
+
+            else if(_interval)
             {
-                _halt = false;
+                _interval = false;
+                Log.info("Received interval event. Freezing for " + _intervalTime + "...", "Thread" + Thread.CurrentThread.ManagedThreadId);
+                Thread.Sleep(_intervalTime);
+                Log.info("Interval time finished. Unfreezing...", "Thread" + Thread.CurrentThread.ManagedThreadId);
+                process();
             }
         }        
 
         public void waitFrozen()
         {
-            Log.writeLine("Waiting for unfreeze signal...", "Thread" + Thread.CurrentThread.ManagedThreadId);
+            Log.info("Waiting for unfreeze signal...", "Thread" + Thread.CurrentThread.ManagedThreadId);
             _unfreezeSignal.WaitOne();
             _unfreezeSignal.Reset();
-            Log.writeLine("Unfreeze signal received! Restoring working state...", "Thread" + Thread.CurrentThread.ManagedThreadId);
+            Log.info("Unfreeze signal received! Restoring working state...", "Thread" + Thread.CurrentThread.ManagedThreadId);
             process();
-        }
-
-        public void halt(int time)
-        {
-            _halt = true;
-            _haltTime = time;
         }
     }
 }

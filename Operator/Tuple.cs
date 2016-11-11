@@ -63,7 +63,7 @@ namespace DADSTORM
             if(_items.Length > 0){
                 for (int i = 0; i < _items.Length - 1; i++)
                 {
-                    res += _items[i] + ", ";
+                    res += _items[i] + " - ";
                 }
                 res += _items[_items.Length - 1];
             }

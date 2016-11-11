@@ -65,6 +65,7 @@ namespace DADSTORM {
 
         private Boolean primary;
         private Boolean running;
+        private Boolean frozen;
         private string id, port, replication, routing, address, logging, semantics;
         private string[] output, op_spec;
         private int repNmbr;
@@ -88,6 +89,9 @@ namespace DADSTORM {
             //Replica configuration
             primary = false;
             running = false;
+            frozen = false;
+
+            //Some parameteres are unnecessary, remove later
             id = dto.op_id;
             repNmbr = dto.curr_rep;
             port = dto.ports[dto.curr_rep];
@@ -106,25 +110,22 @@ namespace DADSTORM {
 
             //Routing Strategy for this replica
             //TODO::XXX::Get routing strategy instance from routing parameter
-            router = new PrimaryRoutingStrategy(this);
+            router = RoutingStrategyFactory.create(routing, this);
 
             //op = new op(op_spec);
             //TODO::XXX::Get Operator instance from op_spec parameter
             op = OperatorFactory.create(dto.op_spec[0], dto.op_spec.GetRange(1,dto.op_spec.Count-1).ToArray());
-            //op = new DUP();
 
             //Multithreading setup
             input_buffer = new BlockingCollection<Tuple>();
             output_buffer = new BlockingCollection<Tuple>();
             op_pool = new OperatorWorkerPool(4, op, input_buffer, output_buffer);
 
-            op_pool.start();
-            log.writeLine(" is now online but not processing");
+            log.writeLine("Now online but not processing");
         }
 
         public void input(Tuple t)
         {
-            log.writeLine("Received tuple");
             input_buffer.Add(t);
         }
 
@@ -134,7 +135,6 @@ namespace DADSTORM {
             while (true)
             {
                 data = output_buffer.Take();
-                log.writeLine("Sending tuple");
                 router.route(data);
             }
         }
@@ -142,9 +142,9 @@ namespace DADSTORM {
         //private??
         public void send(Tuple t, string dest)
         {
+            log.writeLine("tuple " + address + " " + t.toString());
             Replica next = (Replica)Activator.GetObject(typeof(Replica), dest);
             next.input(t);
-            log.writeLine(t.toString());
         }
 
         public Boolean isPrimary()
@@ -159,7 +159,7 @@ namespace DADSTORM {
 
         public string ping(string value)
         {
-            log.writeLine("Received (echo) ping command -\n " + value);
+            log.info("Received (echo) ping command -\n " + value);
             return value;
         }
 
@@ -170,14 +170,16 @@ namespace DADSTORM {
 
         public void freeze()
         {
-            log.writeLine("Received freeze command");
+            frozen = true;
+            log.info("Received freeze command");
             //RemotingServices.Disconnect(this);
             op_pool.freezeAll(); 
         }
 
         public void unfreeze()
         {
-            log.writeLine("Received unfreeze command");
+            frozen = false;
+            log.info("Received unfreeze command");
             //RemotingServices.Connect(typeof(Replica), "op", this);
             op_pool.unfreezeAll(); 
         }
@@ -185,31 +187,33 @@ namespace DADSTORM {
         public void readFile()
         {
             string file = @"..\..\..\tweeters.dat";
-            log.writeLine("Processing file: " + file);
+            log.info("Processing file: " + file);
             TupleFileReaderWorker tfrw = new TupleFileReaderWorker(input_buffer, file);
             tfrw.start();
         }
 
         public void start()
         {
-            log.writeLine("Received start command");
+            log.info("Received start command");
             running = true;
             op_pool.start();
         }
 
         public void crash()
         {
-            log.writeLine("Received crash command... Sayonara!");
+            log.info("Received crash command... Sayonara!");
             System.Environment.Exit(1);
         }
 
         //TODO::XXX::FIXME -> check if frozen 
         public void status()
         {
-            log.writeLine("Received status command");
+            log.info("Received status command");
             string res = " - ONLINE -";
             if (running)
                 res += " PROCESSING";
+            //else if (op_pool.frozen)
+            //    res += " FROZEN";
             else
                 res += " WAITING";
             log.writeLine(res);
@@ -217,8 +221,8 @@ namespace DADSTORM {
 
         public int interval(int time)
         {
-            log.writeLine("Received interval command for " + time + " ms");
-            op_pool.haltAll(time);
+            log.info("Received interval command with time " + time);
+            op_pool.intervalAll(time);
             return time;
         }
     }

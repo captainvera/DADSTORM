@@ -240,7 +240,6 @@ namespace DADSTORM
                     Replica replica = getReplica(oper.address[rep]);
                     VoidAsyncDelegate crashDel = new VoidAsyncDelegate(replica.crash);
                     IAsyncResult remAr = crashDel.BeginInvoke(null, null);
-                    logger.writeLine("Implement me. (CRASH)");
                 }
                 catch (System.Net.Sockets.SocketException e)
                 {

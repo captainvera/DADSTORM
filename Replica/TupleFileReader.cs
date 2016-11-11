@@ -30,7 +30,8 @@ namespace DADSTORM
             while ((line = reader.ReadLine()) != null)
             {
                 Log.debug(line, "TupleFileReader");
-                _tuples.Enqueue(line);
+                if (!line.StartsWith("%%")) 
+                    _tuples.Enqueue(line);
             }
             reader.Close();
         }
@@ -57,7 +58,6 @@ namespace DADSTORM
             {
                 res.set(i, fields[i]);
                 Log.debug(fields[i] + " inserted at " + i, "TupleFileReader");
-                
             }
             return res;
         }
