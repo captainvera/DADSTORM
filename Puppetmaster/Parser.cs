@@ -15,7 +15,8 @@ namespace DADSTORM
         string logging = "light";
         string semantics = "at-most-once";
 
-        string _pathToFile;
+        string _pathToFile, pmAddress;
+        string[] cmds;
 
         public Parser(string targetFile)
         {
@@ -23,13 +24,17 @@ namespace DADSTORM
 
         }
 
-        public Dictionary<string, OperatorDTO> makeOperatorDTOs()
+        public Dictionary<string, OperatorDTO> makeOperatorDTOs(string pmAddr)
         {
             Logger.debug("Building Operator drafts from previously split file.", "Parser");
 
             Dictionary<string, OperatorDTO> operatorDTOs = new Dictionary<string, OperatorDTO>();
 
+            pmAddress = pmAddr;
             string[] splitFile = readConfigOps();
+
+            //setting logging level and semantics
+            parseCommands();
 
             string id = "placeholder";
             string rep = "placeholder";
@@ -102,8 +107,10 @@ namespace DADSTORM
                         }
 
                         operatorDTOs.Add(id, new OperatorDTO(id, inputs, rep, rout, addr, spec, port));
-
-                        Logger.debug("Added new operator draft to ArrayList. Continue?", "Parser");
+                        operatorDTOs[id].pmAdress = pmAddress;
+                        operatorDTOs[id].logging = logging;
+                        operatorDTOs[id].semantics = semantics;
+                        Logger.debug("Added new operator draft to ArrayList. ", "Parser");
 
                         inputs = new List<string>();
                         addr = new List<string>();
@@ -123,39 +130,7 @@ namespace DADSTORM
 
             //setting DTO's next_op_addresses parameter
             setNextOperatorAddress(operatorDTOs);
-
             operatorDTOs.Last().Value.next_op_addresses.Add("X");
-
-            //setting logging level and semantics
-            string[] commands = readCommands();
-
-            //TODO safe defaults not implemented
-            foreach (string str in commands)
-            {
-                string[] splt = str.Split(' ');
-
-                if (splt[0] == "LoggingLevel")
-                {
-                    if (splt[1] == "light" || splt[1] == "full")
-                    {
-                        foreach (KeyValuePair<string, OperatorDTO> op in operatorDTOs)
-                            op.Value.logging = splt[1];
-
-                        Logger.writeLine("Logging: " + splt[1], "Puppetmaster");
-                    }
-                }
-                else if (splt[0] == "Semantics")
-                {
-                    if (splt[1] == "at-most-once" || splt[1] == "at-least-once" || splt[1] == "exactly-once")
-                    {
-                        foreach (KeyValuePair<string, OperatorDTO> op in operatorDTOs)
-                            op.Value.semantics = splt[1];
-
-                        Logger.writeLine("Semantics: " + splt[1], "Puppetmaster");
-
-                    }
-                }
-            }
 
             return operatorDTOs;
         }
@@ -177,7 +152,7 @@ namespace DADSTORM
         public string[] readConfigOps()
         {
             string opDef = "";
-            System.IO.StreamReader reader = new System.IO.StreamReader(@"..\..\..\dadstorm.config");
+            System.IO.StreamReader reader = new System.IO.StreamReader(_pathToFile);
 
             string line = reader.ReadLine();
             while ((line = reader.ReadLine()) != null)
@@ -190,15 +165,21 @@ namespace DADSTORM
             char[] splitChars = { ' ', ',', '\t', '\n', '\r' };
             string[] splitFile = opDef.Split(splitChars, StringSplitOptions.RemoveEmptyEntries);
 
-            Logger.debug("Done splitting. Size = {0}. Continue?", "Parser", splitFile.Count());
+            Logger.debug("Done splitting. Size = {0}. ", "Parser", splitFile.Count());
 
             return splitFile;
         }
 
+
         public string[] readCommands()
         {
+            return cmds;
+        }
+
+        public void parseCommands()
+        {
             List<string> commands = new List<string>();
-            System.IO.StreamReader reader = new System.IO.StreamReader(@"..\..\..\dadstorm.config");
+            System.IO.StreamReader reader = new System.IO.StreamReader(_pathToFile);
 
             string line = reader.ReadLine();
 
@@ -213,7 +194,29 @@ namespace DADSTORM
             {
                 Logger.debug(st);
             }
-            return commands.ToArray();
+            cmds = commands.ToArray();
+
+            foreach (string str in commands)
+            {
+                string[] splt = str.Split(' ');
+
+                if (splt[0] == "LoggingLevel")
+                {
+                    if (splt[1] == "light" || splt[1] == "full")
+                    {
+                        logging = splt[1];
+                        Logger.writeLine("Logging: " + splt[1], "Puppetmaster");
+                    }
+                }
+                else if (splt[0] == "Semantics")
+                {
+                    if (splt[1] == "at-most-once" || splt[1] == "at-least-once" || splt[1] == "exactly-once")
+                    {
+                        semantics = splt[1];
+                        Logger.writeLine("Semantics: " + splt[1], "Puppetmaster");
+                    }
+                }
+            }
         }
 
         public static string parsePortFromAddress(string address)

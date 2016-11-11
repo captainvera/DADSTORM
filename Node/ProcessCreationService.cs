@@ -23,7 +23,7 @@ namespace DADSTORM
         public void createProcess(OperatorDTO op)
         {
             
-            log.writeLine("Creating new Replica Process | id = " + op.op_id + " | port = " + op.ports[op.curr_rep]);
+            log.writeLine("Creating new Replica Process | id = " + op.op_id + "(-" + op.curr_rep+") | port = " + op.ports[op.curr_rep]);
 
             Process p = new Process();
             string t = ReplicaProcess.getPath() + "\\Replica.exe";
@@ -36,7 +36,7 @@ namespace DADSTORM
 
             p.Start();
 
-            log.writeLine("Replica " + op.op_id + " created");
+            log.writeLine("Replica " + op.op_id + "-" + op.curr_rep + " created");
         }
 
         //Converts DTO to XML and returns it as string
