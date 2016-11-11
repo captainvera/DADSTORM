@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+VisualStudioVersion = 14.0.24720.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Node", "Node\Node.csproj", "{77DE03B0-5C77-449D-8832-CB8E7FEA4246}"
 EndProject
@@ -12,6 +12,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Puppetmaster", "Puppetmaster\Puppetmaster.csproj", "{EF78A7A4-79D8-44B6-839B-0C3026972B25}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Logger", "Logger\Logger.csproj", "{B14BD05D-8720-4CF5-85C1-EDD939A179E3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CustomOperators", "CustomOperators\CustomOperators.csproj", "{8CA97681-82E0-4737-B83E-CFD63034497A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -39,6 +41,10 @@ Global
 		{B14BD05D-8720-4CF5-85C1-EDD939A179E3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B14BD05D-8720-4CF5-85C1-EDD939A179E3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B14BD05D-8720-4CF5-85C1-EDD939A179E3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8CA97681-82E0-4737-B83E-CFD63034497A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8CA97681-82E0-4737-B83E-CFD63034497A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8CA97681-82E0-4737-B83E-CFD63034497A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8CA97681-82E0-4737-B83E-CFD63034497A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

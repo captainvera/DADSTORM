@@ -58,6 +58,12 @@ namespace DADSTORM
             if(level > 1)
                 Console.WriteLine("[DEBUG] " + String.Format(s, args));
         }
+
+        public static void debug(string s, string id, params object[] args)
+        {
+            if (level > 1)
+                Console.WriteLine("[DEBUG-" + id + "]" + String.Format(s, args));
+        }
     }
 
     public class RemoteLogger : ILogger
