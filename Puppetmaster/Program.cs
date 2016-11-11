@@ -346,12 +346,12 @@ namespace DADSTORM
 
         public void writeLine(string str, params object[] args)
         {
-            log.writeLine(str, args);
+            log.writeLineRemote(str, args);
         }
 
         public void write(string str, params object[] args)
         {
-            log.write(str, args);
+            log.writeRemote(str, args);
         }
 
         override public object InitializeLifetimeService()

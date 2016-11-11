@@ -67,6 +67,7 @@ namespace DADSTORM {
         private Boolean running;
         private string id, port, replication, routing, address, logging, semantics;
         private string[] output, op_spec;
+        private int repNmbr;
 
         /** ------------------- Multithreading ---------------------------- **/
 
@@ -88,6 +89,7 @@ namespace DADSTORM {
             primary = false;
             running = false;
             id = dto.op_id;
+            repNmbr = dto.curr_rep;
             port = dto.ports[dto.curr_rep];
             output = dto.next_op_addresses.ToArray();
             replication = dto.rep_fact;
@@ -96,8 +98,9 @@ namespace DADSTORM {
             logging = dto.logging;
             semantics = dto.semantics;
             op_spec = dto.op_spec.ToArray();
-
-            log = new Logger("Replica" + id);
+            
+            //"full" -> logging
+            log = new RemoteLogger("Replica" + id + "-" + repNmbr.ToString(), "full", dto.pmAdress);
 
             //Routing Strategy for this replica
             //TODO::XXX::Get routing strategy instance from routing parameter
@@ -114,7 +117,7 @@ namespace DADSTORM {
             op_pool = new OperatorWorkerPool(4, op, input_buffer, output_buffer);
 
             op_pool.start();
-            log.writeLine("Replica " + id + " is now online but not processing");
+            log.writeLine(" is now online but not processing");
         }
 
         public void input(Tuple t)
@@ -139,7 +142,7 @@ namespace DADSTORM {
         {
             Replica next = (Replica)Activator.GetObject(typeof(Replica), dest);
             next.input(t);
-            log.writeLine("Replica"+ id + " " + t.toString());
+            log.writeLine(t.toString());
         }
 
         public Boolean isPrimary()
@@ -202,7 +205,7 @@ namespace DADSTORM {
         public void status()
         {
             log.writeLine("Received status command");
-            string res = "Replica " + id + " - ONLINE -";
+            string res = " - ONLINE -";
             if (running)
                 res += " PROCESSING";
             else
@@ -214,7 +217,7 @@ namespace DADSTORM {
         {
             log.writeLine("Received interval command for " + time + " ms");
             op_pool.haltAll(time);
-            return 1337 + time;
+            return time;
         }
     }
 }
