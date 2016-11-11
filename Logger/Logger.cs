@@ -40,7 +40,7 @@ namespace DADSTORM
         public static void info(string s, string id, params object[] args)
         {
             if (Config.logLevel > 0)
-                Console.WriteLine("[DEBUG-" + id + "]" + String.Format(s, args));
+                Console.WriteLine("[INFO-" + id + "]" + String.Format(s, args));
         }
 
         public static void debug(string s, string id, params object[] args)
@@ -100,7 +100,7 @@ namespace DADSTORM
 
         protected virtual void _info(string s, params object[] args)
         {
-            Console.Write("[INFO-" + id + "] " + String.Format(s, args));
+            Console.WriteLine("[INFO-" + id + "] " + String.Format(s, args));
         }
 
         protected virtual void _debug(string s, params object[] args)

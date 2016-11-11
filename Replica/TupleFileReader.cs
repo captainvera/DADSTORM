@@ -24,16 +24,23 @@ namespace DADSTORM
 
         public void readFile()
         {
-            System.IO.StreamReader reader = new System.IO.StreamReader(_file);
-
-            string line = null;
-            while ((line = reader.ReadLine()) != null)
+            try
             {
-                Log.debug(line, "TupleFileReader");
-                if (!line.StartsWith("%%")) 
-                    _tuples.Enqueue(line);
+                System.IO.StreamReader reader = new System.IO.StreamReader(_file);
+
+                string line = null;
+                while ((line = reader.ReadLine()) != null)
+                {
+                    Log.debug(line, "TupleFileReader");
+                    if (!line.StartsWith("%%"))
+                        _tuples.Enqueue(line);
+                }
+                reader.Close();
             }
-            reader.Close();
+            catch(Exception e)
+            {
+                Log.writeLine("Failed to open provided file. Ignoring input file....", "TupleFileReaderWorker");
+            }
         }
 
         public Tuple getNextTuple()

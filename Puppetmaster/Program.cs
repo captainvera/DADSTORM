@@ -32,8 +32,13 @@ namespace DADSTORM
 
             Parser parser = new Parser(@"..\..\..\dadstorm.config");
             string[] commands =  parser.readCommands();
+
             Dictionary<string, OperatorDTO> operatorDTOs = parser.makeOperatorDTOs(ip);
 
+            //We always want to print everything we receive on the Puppetmaster
+            //Each replica decides if they send or not the info depending on logging level
+            //Config is local to each proccess 
+            Config.setLoggingLevel("full");
             PuppetmasterListener pml = new PuppetmasterListener(log);
             
             TcpChannel channel = new TcpChannel(port);
@@ -48,10 +53,12 @@ namespace DADSTORM
 
             log.writeLine("Welcome to the PuppetMaster Shell.");
             log.writeLine("Do not be afraid to write \"help\" if needed.");
-            //sh.start(commands);
-            sh.start();
-            log.writeLine("Goodbye.");
 
+            //Small delay
+            Thread.Sleep(2000);
+
+            sh.start(commands);
+            log.writeLine("Goodbye.");
         }
     }
 

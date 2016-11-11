@@ -173,6 +173,7 @@ namespace DADSTORM
 
         public string[] readCommands()
         {
+            parseCommands();
             return cmds;
         }
 

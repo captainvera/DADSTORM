@@ -75,6 +75,7 @@ namespace DADSTORM {
         OperatorWorkerPool op_pool;
         BlockingCollection<Tuple> input_buffer;
         BlockingCollection<Tuple> output_buffer;
+        List<TupleFileReaderWorker> tfr_workers;
 
         /** ------------------- Replica Abstraction ----------------------- **/
 
@@ -121,11 +122,24 @@ namespace DADSTORM {
             output_buffer = new BlockingCollection<Tuple>();
             op_pool = new OperatorWorkerPool(4, op, input_buffer, output_buffer);
 
+            //Check if we have input files
+            tfr_workers = new List<TupleFileReaderWorker>();
+            foreach(string s in dto.input_ops)
+            {
+                //It's a file
+                if (s.Contains("."))
+                {
+                    TupleFileReaderWorker tfrw = new TupleFileReaderWorker(input_buffer, s);
+                    tfr_workers.Add(tfrw);
+                }
+            }
+
             log.writeLine("Now online but not processing");
         }
 
         public void input(Tuple t)
         {
+            log.debug("Received tuple " + t.toString());
             input_buffer.Add(t);
         }
 
@@ -142,7 +156,7 @@ namespace DADSTORM {
         //private??
         public void send(Tuple t, string dest)
         {
-            log.writeLine("tuple " + address + " " + t.toString());
+            log.info("tuple " + address + " " + t.toString());
             Replica next = (Replica)Activator.GetObject(typeof(Replica), dest);
             next.input(t);
         }
@@ -172,6 +186,8 @@ namespace DADSTORM {
         {
             frozen = true;
             log.info("Received freeze command");
+            //Is this necessary?
+            //How can we receive unfreeze if we disconnect the remote object?
             //RemotingServices.Disconnect(this);
             op_pool.freezeAll(); 
         }
@@ -180,6 +196,7 @@ namespace DADSTORM {
         {
             frozen = false;
             log.info("Received unfreeze command");
+            //Is this necessary?
             //RemotingServices.Connect(typeof(Replica), "op", this);
             op_pool.unfreezeAll(); 
         }
@@ -197,6 +214,11 @@ namespace DADSTORM {
             log.info("Received start command");
             running = true;
             op_pool.start();
+            //Read all input files 
+            foreach(TupleFileReaderWorker tfrw in tfr_workers)
+            {
+                tfrw.start(); 
+            }
         }
 
         public void crash()
@@ -209,13 +231,13 @@ namespace DADSTORM {
         public void status()
         {
             log.info("Received status command");
-            string res = " - ONLINE -";
+            string res = address + " - ONLINE -";
             if (running)
                 res += " PROCESSING";
-            //else if (op_pool.frozen)
-            //    res += " FROZEN";
             else
                 res += " WAITING";
+            if (frozen)
+                res += " FROZEN";
             log.writeLine(res);
         }
 

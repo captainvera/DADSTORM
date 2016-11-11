@@ -9,7 +9,7 @@ namespace DADSTORM
     class Shell
     {
         private Dictionary<string, Command> _commands = new Dictionary<string, Command>(StringComparer.OrdinalIgnoreCase);
-        private string _prompt = ">>";
+        private string _prompt = ">> ";
         private Puppetmaster _pm;
         private bool _exit;
 
@@ -54,6 +54,14 @@ namespace DADSTORM
                 if (_exit == true)
                     break;
                 Console.Write(_prompt);
+            }
+        }
+
+        public void processCommandList(string[] commands)
+        {
+            foreach(string command in commands)
+            {
+                processCommand(command);
             }
         }
 

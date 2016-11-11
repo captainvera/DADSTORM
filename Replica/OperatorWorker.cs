@@ -157,6 +157,7 @@ namespace DADSTORM
             _out = output;
             _wthread = new Thread(this.process);
 
+            _source = new CancellationTokenSource();
             _unfreezeSignal = new ManualResetEvent(false);
             _freeze = false;
             _interval = false;
