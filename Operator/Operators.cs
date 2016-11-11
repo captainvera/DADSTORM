@@ -255,6 +255,12 @@ namespace DADSTORM
 
         public Tuple process(Tuple t)
         {
+            if (_fieldNumber > t.getSize() - 1)
+            {
+                Logger.debug("Field Number for UNIQ operator is out of range. fieldNumber = " + _fieldNumber + " | tuple.size = " + t.getSize());
+                return null;
+                //Maybe use exception??
+            }
 
             if (_isnumber)
             {
