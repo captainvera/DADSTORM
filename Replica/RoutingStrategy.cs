@@ -30,7 +30,7 @@ namespace DADSTORM
             }
             else
             {
-                Logger.writeLine("End of streaming chain detected!", "PrimaryRouting");
+                Log.writeLine("End of streaming chain detected!", "PrimaryRouting");
             }
         }
     }
@@ -54,7 +54,7 @@ namespace DADSTORM
             }
             else
             {
-                Logger.writeLine("End of streaming chain detected!", "RandomRouting");
+                Log.writeLine("End of streaming chain detected!", "RandomRouting");
             }
         }
     }
@@ -91,7 +91,7 @@ namespace DADSTORM
             }
             else
             {
-                Logger.writeLine("End of streaming chain detected!", "RandomRouting");
+                Log.writeLine("End of streaming chain detected!", "RandomRouting");
             }
         }
     }

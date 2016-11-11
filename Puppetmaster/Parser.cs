@@ -26,7 +26,7 @@ namespace DADSTORM
 
         public Dictionary<string, OperatorDTO> makeOperatorDTOs(string pmAddr)
         {
-            Logger.debug("Building Operator drafts from previously split file.", "Parser");
+            Log.debug("Building Operator drafts from previously split file.", "Parser");
 
             Dictionary<string, OperatorDTO> operatorDTOs = new Dictionary<string, OperatorDTO>();
 
@@ -49,14 +49,14 @@ namespace DADSTORM
 
             while (n < splitFile.Length)
             {
-                Logger.debug("\nWord being filtered: {0} - n = {1}", "Parser", splitFile[n], n);
+                Log.debug("\nWord being filtered: {0} - n = {1}", "Parser", splitFile[n], n);
                 switch (splitFile[n])
                 {
                     case "input":
                         i = n + 2;
                         while (!splitFile[i].Equals("rep"))
                         {
-                            Logger.debug("Operator's input: {0}", "Parser", splitFile[i]);
+                            Log.debug("Operator's input: {0}", "Parser", splitFile[i]);
                             inputs.Add(splitFile[i]);
                             i++;
                         }
@@ -64,19 +64,19 @@ namespace DADSTORM
                         break;
                     case "rep":
                         rep = splitFile[n + 2];
-                        Logger.debug("Operator rep factor: {0}", "Parser", rep);
+                        Log.debug("Operator rep factor: {0}", "Parser", rep);
                         n += 2;
                         break;
                     case "routing":
                         rout = splitFile[n + 1];
-                        Logger.debug("Operator routing policy: {0}", "Parser", rout);
+                        Log.debug("Operator routing policy: {0}", "Parser", rout);
                         n++;
                         break;
                     case "address":
                         i = n + 1;
                         while (!splitFile[i].Equals("operator"))
                         {
-                            Logger.debug("Adresses: {0}", "Parser", splitFile[i]);
+                            Log.debug("Adresses: {0}", "Parser", splitFile[i]);
                             addr.Add(splitFile[i]);
                             port.Add(Parser.parsePortFromAddress(splitFile[i]));
                             i++;
@@ -87,7 +87,7 @@ namespace DADSTORM
                         i = n + 2;
                         while (!splitFile[i].Equals("input"))
                         {
-                            Logger.debug("Operator spec items: {0}. i = {1}", "Parser", splitFile[i], i);
+                            Log.debug("Operator spec items: {0}. i = {1}", "Parser", splitFile[i], i);
                             spec.Add(splitFile[i]);
                             i++;
                             if (i == splitFile.Count())
@@ -98,7 +98,7 @@ namespace DADSTORM
                         if (i < splitFile.Count())
                         {
                             spec.RemoveAt(spec.Count - 1);
-                            Logger.debug("spec array's current last item: {0}", "Parser", spec[spec.Count - 1]);
+                            Log.debug("spec array's current last item: {0}", "Parser", spec[spec.Count - 1]);
                             n = i - 2;
                         }
                         else
@@ -110,7 +110,7 @@ namespace DADSTORM
                         operatorDTOs[id].pmAdress = pmAddress;
                         operatorDTOs[id].logging = logging;
                         operatorDTOs[id].semantics = semantics;
-                        Logger.debug("Added new operator draft to ArrayList. ", "Parser");
+                        Log.debug("Added new operator draft to ArrayList. ", "Parser");
 
                         inputs = new List<string>();
                         addr = new List<string>();
@@ -120,13 +120,13 @@ namespace DADSTORM
                         break;
                     default:
                         id = splitFile[n];
-                        Logger.debug("New operator with id: {0}", "Parser", id);
-                        Logger.debug("Entered default statement.", "Parser");
+                        Log.debug("New operator with id: {0}", "Parser", id);
+                        Log.debug("Entered default statement.", "Parser");
                         break;
                 }
                 n++;
             }
-            Logger.debug("Drafts all done.");
+            Log.debug("Drafts all done.", "Parser");
 
             //setting DTO's next_op_addresses parameter
             setNextOperatorAddress(operatorDTOs);
@@ -165,7 +165,7 @@ namespace DADSTORM
             char[] splitChars = { ' ', ',', '\t', '\n', '\r' };
             string[] splitFile = opDef.Split(splitChars, StringSplitOptions.RemoveEmptyEntries);
 
-            Logger.debug("Done splitting. Size = {0}. ", "Parser", splitFile.Count());
+            Log.debug("Done splitting. Size = {0}. ", "Parser", splitFile.Count());
 
             return splitFile;
         }
@@ -192,7 +192,7 @@ namespace DADSTORM
             commands.RemoveAll(string.IsNullOrWhiteSpace);
             foreach (string st in commands)
             {
-                Logger.debug(st);
+                Log.debug(st, "Parser");
             }
             cmds = commands.ToArray();
 
@@ -205,7 +205,7 @@ namespace DADSTORM
                     if (splt[1] == "light" || splt[1] == "full")
                     {
                         logging = splt[1];
-                        Logger.writeLine("Logging: " + splt[1], "Puppetmaster");
+                        Log.writeLine("Logging: " + splt[1], "Puppetmaster");
                     }
                 }
                 else if (splt[0] == "Semantics")
@@ -213,7 +213,7 @@ namespace DADSTORM
                     if (splt[1] == "at-most-once" || splt[1] == "at-least-once" || splt[1] == "exactly-once")
                     {
                         semantics = splt[1];
-                        Logger.writeLine("Semantics: " + splt[1], "Puppetmaster");
+                        Log.writeLine("Semantics: " + splt[1], "Puppetmaster");
                     }
                 }
             }

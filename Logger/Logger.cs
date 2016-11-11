@@ -6,53 +6,27 @@ using System.Threading.Tasks;
 
 namespace DADSTORM
 {
-
+    /**
+     * Static Logging Methods 
+     */
     public interface ILogger
     {
-
         void writeLine(string s, params object[] args);
-
         void write(string s, params object[] args);
-
+        void info(string s, params object[] args);
+        void debug(string s, params object[] args);
     }
-    public class Logger : ILogger
+
+    public interface ILoggerReceiver
     {
-        /**
-         * Logging level:
-         * 0 - light
-         * 1 - full
-         * 2 - Debug
-         */
+        void writeLine(string s, string id, params object[] args);
+        void write(string s, string id, params object[] args);
+        void info(string s, string id, params object[] args);
+        void debug(string s, string id, params object[] args);
+    } 
 
-        private string id;
-
-        static int level = 2;
-
-        public Logger(string _id)
-        {
-            id = _id;
-        }
-
-        public void writeLine(string s, params object[] args)
-        {
-            Console.WriteLine("[" + id + "] " + String.Format(s, args)); 
-        }
-
-        public void write(string s, params object[] args)
-        {
-            Console.Write("[" + id + "] " + String.Format(s, args)); 
-        }
-
-        public void writeLineRemote(string s, params object[] args)
-        {
-            Console.WriteLine(String.Format(s, args));
-        }
-
-        public void writeRemote(string s, params object[] args)
-        {
-            Console.Write(String.Format(s, args));
-        }
-
+    public class Log
+    {
         public static void writeLine(string s, string id, params object[] args)
         {
             Console.WriteLine("[" + id + "] " + String.Format(s, args));
@@ -63,27 +37,84 @@ namespace DADSTORM
             Console.Write("[" + id + "] " + String.Format(s, args));
         }
 
-        public static void debug(string s, params object[] args)
+        public static void info(string s, string id, params object[] args)
         {
-            if(level > 1)
-                Console.WriteLine("[DEBUG] " + String.Format(s, args));
+            if (Config.logLevel > 0)
+                Console.WriteLine("[DEBUG-" + id + "]" + String.Format(s, args));
         }
 
         public static void debug(string s, string id, params object[] args)
         {
-            if (level > 1)
+            if (Config.logLevel > 1)
                 Console.WriteLine("[DEBUG-" + id + "]" + String.Format(s, args));
         }
     }
 
-    public class RemoteLogger : ILogger
+    /**
+     * Logger base class (local logger) 
+     */
+    public class Logger : ILogger
     {
-        private string id;
+
+        protected string id;
+        protected int level;
+
+        public Logger(string _id)
+        {
+            id = _id;
+            //FIXME::XXX -> get log level from constructor or somewhere else
+            level = Config.logLevel;
+        }
+
+        public void writeLine(string s, params object[] args)
+        {
+            _writeLine(s, args);
+        }
+
+        public void write(string s, params object[] args)
+        {
+            _write(s, args);
+        }
+
+        public void info(string s, params object[] args)
+        {
+            if (level > 0)
+                _info(s, args);
+        }
+
+        public void debug(string s, params object[] args)
+        {
+            if (level > 1)
+                _debug(s, args);
+        }
+
+        protected virtual void _write(string s, params object[] args)
+        {
+            Console.Write("[" + id + "] " + String.Format(s, args));
+        }
+
+        protected virtual void _writeLine(string s, params object[] args)
+        {
+            Console.WriteLine("[" + id + "] " + String.Format(s, args));
+        }
+
+        protected virtual void _info(string s, params object[] args)
+        {
+            Console.Write("[INFO-" + id + "] " + String.Format(s, args));
+        }
+
+        protected virtual void _debug(string s, params object[] args)
+        {
+            Console.WriteLine("[DEBUG-" + id + "]" + String.Format(s, args));
+        }
+    }
+
+    public class RemoteLogger : Logger
+    {
         private bool connected;
-        static int logLevel = 0;
-        private ILogger remLogger;
+        private ILoggerReceiver remLogger;
         private string remoteAdress;
-        public delegate void WriteAsyncDelegate(string str, params object[] args);
+        public delegate void WriteAsyncDelegate(string str, string id, params object[] args);
 
         /**
          * Logging level:
@@ -92,86 +123,116 @@ namespace DADSTORM
          * 2 - Debug
          */
 
-        public RemoteLogger(string _id, string logging, string pmAdress)
+        public RemoteLogger(string _id, string pmAdress) : base(_id)
         {
-            id = _id;
-            if (logging.CompareTo("full") == 0)
-            {
-                logLevel = 1;
-                remoteAdress = pmAdress;
-                connect(remoteAdress);
-            }
+            remoteAdress = pmAdress;
+            connect(remoteAdress);
         }
 
         public void connect(string address)
         {
-            remLogger = (ILogger)Activator.GetObject(typeof(ILogger), address);
+            remLogger = (ILoggerReceiver)Activator.GetObject(typeof(ILoggerReceiver), address);
             remoteAdress = address;
             connected = true;
         }
 
-        public void write(string s, params object[] args)
+        protected override void _write(string s, params object[] args)
         {
-            if (logLevel == 1)
+            if (connected)
             {
-
-                if (connected)
+                try
                 {
-                    try
-                    {
-                        Console.Write("[" + id + "] " + String.Format(s, args));
-                        WriteAsyncDelegate writeDel = new WriteAsyncDelegate(remLogger.writeLine);
-                        s = string.Concat("[" + id +"]", s);
-                        IAsyncResult remAr = writeDel.BeginInvoke(s, args, null, null);
-                    }
-                    catch (System.Net.Sockets.SocketException e)
-                    {
-                        connected = false;
-                        writeLine("Remote logging failed", null);
-
-                    }
+                    WriteAsyncDelegate writeDel = new WriteAsyncDelegate(remLogger.writeLine);
+                    IAsyncResult remAr = writeDel.BeginInvoke(s, id, args, null, null);
                 }
-                else if (remoteAdress != null)
+                catch (System.Net.Sockets.SocketException e)
                 {
-                    connect(remoteAdress);
-                    write(s, args);
+                    connected = false;
+                    writeLine("Remote logging failed", null);
+
                 }
             }
-            else
+            else if (remoteAdress != null)
             {
-                Console.Write("[" + id + "] " + String.Format(s, args));
+                connect(remoteAdress);
+                write(s, args);
             }
+
+            base._write(s, args);
         }
 
-        public void writeLine(string s, params object[] args)
+        protected override void _writeLine(string s, params object[] args)
         {
-            if (logLevel == 1)
+            if (connected)
             {
-                if (connected)
+                try
                 {
-                    try
-                    {
-                        Console.WriteLine("[" + id + "] " + String.Format(s, args));
-                        WriteAsyncDelegate writeDel = new WriteAsyncDelegate(remLogger.writeLine);
-                        s = string.Concat("[" + id + "]", s);
-                        IAsyncResult remAr = writeDel.BeginInvoke(s, args, null, null);
-                    }
-                    catch (System.Net.Sockets.SocketException e)
-                    {
-                        connected = false;
-                        writeLine("Remote logging failed", null);
-                    }
+                    WriteAsyncDelegate writeDel = new WriteAsyncDelegate(remLogger.writeLine);
+                    IAsyncResult remAr = writeDel.BeginInvoke(s, id, args, null, null);
                 }
-                else if (remoteAdress != null)
+                catch (System.Net.Sockets.SocketException e)
                 {
-                    connect(remoteAdress);
-                    write(s, args);
+                    connected = false;
+                    writeLine("Remote logging failed", null);
                 }
             }
-            else
+            else if (remoteAdress != null)
             {
-                Console.WriteLine("[" + id + "] " + String.Format(s, args));
+                connect(remoteAdress);
+                write(s, args);
             }
+
+            base._writeLine(s, args);
+        }
+
+        protected override void _info(string s, params object[] args)
+        {
+            if (connected)
+            {
+                try
+                {
+                    WriteAsyncDelegate writeDel = new WriteAsyncDelegate(remLogger.info);
+                    IAsyncResult remAr = writeDel.BeginInvoke(s, id, args, null, null);
+                }
+                catch (System.Net.Sockets.SocketException e)
+                {
+                    connected = false;
+                    writeLine("Remote logging failed", null);
+
+                }
+            }
+            else if (remoteAdress != null)
+            {
+                connect(remoteAdress);
+                write(s, args);
+            }
+
+            base._info(s, args);
+        }
+
+        protected override void _debug(string s, params object[] args)
+        {
+            if (connected)
+            {
+                try
+                {
+                    WriteAsyncDelegate writeDel = new WriteAsyncDelegate(remLogger.debug);
+                    IAsyncResult remAr = writeDel.BeginInvoke(s, id, args, null, null);
+                }
+                catch (System.Net.Sockets.SocketException e)
+                {
+                    connected = false;
+                    writeLine("Remote logging failed", null);
+
+                }
+            }
+            else if (remoteAdress != null)
+            {
+                connect(remoteAdress);
+                write(s, args);
+            }
+
+            base._debug(s, args);
         }
     }
 }

@@ -23,7 +23,7 @@ namespace DADSTORM {
 
             OperatorDTO dto = Deserialize<OperatorDTO>(dtoXml);
 
-            Logger.writeLine("Processed " + dto.next_op_addresses.Count + " output replicas", "ReplicaProcess");
+            Log.writeLine("Processed " + dto.next_op_addresses.Count + " output replicas", "ReplicaProcess");
 
             //Might need proper implementation for naming: CHECK PROJ INSTR
             string name = "Replica" + dto.op_id;
@@ -39,7 +39,7 @@ namespace DADSTORM {
             Replica rep = new Replica(dto);
 
             RemotingServices.Marshal(rep, "op", typeof(Replica));
-            Logger.writeLine("Registered with name:" + name, "ReplicaProcess");
+            Log.writeLine("Registered with name:" + name, "ReplicaProcess");
 
             rep.process();
 
@@ -100,7 +100,7 @@ namespace DADSTORM {
             op_spec = dto.op_spec.ToArray();
             
             //"full" -> logging
-            log = new RemoteLogger("Replica" + id + "-" + repNmbr.ToString(), "full", dto.pmAdress);
+            log = new RemoteLogger("Replica" + id + "-" + repNmbr.ToString(), dto.pmAdress);
 
             //Routing Strategy for this replica
             //TODO::XXX::Get routing strategy instance from routing parameter

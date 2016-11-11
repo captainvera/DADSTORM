@@ -40,6 +40,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Config.cs" />
     <Compile Include="Logger.cs" />
     <Compile Include="OperatorDTO.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

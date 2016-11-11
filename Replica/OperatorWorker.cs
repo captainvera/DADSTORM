@@ -158,7 +158,7 @@ namespace DADSTORM
             _source = new CancellationTokenSource();
             _cancelToken = _source.Token;
 
-            Logger.writeLine("Starting processing operation", "Thread" + Thread.CurrentThread.ManagedThreadId);
+            Log.writeLine("Starting processing operation", "Thread" + Thread.CurrentThread.ManagedThreadId);
             try
             {
                 foreach (var data in _in.GetConsumingEnumerable(_cancelToken))
@@ -166,31 +166,31 @@ namespace DADSTORM
                     res = _op.process(data);
                     if (res != null)
                     {
-                        Logger.debug(res.toString() + " | by : " + Thread.CurrentThread.ManagedThreadId);
+                        Log.debug(res.toString(), "Thread" + Thread.CurrentThread.ManagedThreadId);
 
                         _out.Add(res);
                         res = null;
                     }
                     else
                     {
-                        Logger.writeLine("Null tuple result, ignoring", "Thread" + Thread.CurrentThread.ManagedThreadId);
+                        Log.writeLine("Null tuple result, ignoring", "Thread" + Thread.CurrentThread.ManagedThreadId);
 
                     }
                 }
             }
             catch (OperationCanceledException e)
             {
-                Logger.writeLine("Operation cancelled. Checking if there is data to restore.", "Thread" + Thread.CurrentThread.ManagedThreadId);
+                Log.writeLine("Operation cancelled. Checking if there is data to restore.", "Thread" + Thread.CurrentThread.ManagedThreadId);
                 if (res != null)
                 {
-                    Logger.writeLine("Tuple restored to input buffer", "Thread" + Thread.CurrentThread.ManagedThreadId);
+                    Log.writeLine("Tuple restored to input buffer", "Thread" + Thread.CurrentThread.ManagedThreadId);
                     _out.Add(res);
                 }
             }
 
             if (_freeze)
             {
-                Logger.writeLine("Received freeze event. Freezing...", "Thread" + Thread.CurrentThread.ManagedThreadId);
+                Log.writeLine("Received freeze event. Freezing...", "Thread" + Thread.CurrentThread.ManagedThreadId);
                 waitFrozen();
             }
             else if(_halt)
@@ -201,10 +201,10 @@ namespace DADSTORM
 
         public void waitFrozen()
         {
-            Logger.writeLine("Waiting for unfreeze signal...", "Thread" + Thread.CurrentThread.ManagedThreadId);
+            Log.writeLine("Waiting for unfreeze signal...", "Thread" + Thread.CurrentThread.ManagedThreadId);
             _unfreezeSignal.WaitOne();
             _unfreezeSignal.Reset();
-            Logger.writeLine("Unfreeze signal received! Restoring working state...", "Thread" + Thread.CurrentThread.ManagedThreadId);
+            Log.writeLine("Unfreeze signal received! Restoring working state...", "Thread" + Thread.CurrentThread.ManagedThreadId);
             process();
         }
 

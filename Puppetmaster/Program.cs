@@ -322,13 +322,13 @@ namespace DADSTORM
         public static void IntervalAsyncCallback(IAsyncResult res)
         {
             VoidAsyncDelegate delegat = (VoidAsyncDelegate)((AsyncResult)res).AsyncDelegate;
-            Logger.writeLine("Finished call", "AsyncCallback");
+            Log.writeLine("Finished call", "AsyncCallback");
             return;
         }
 
     };
 
-    class PuppetmasterListener : MarshalByRefObject, ILogger
+    class PuppetmasterListener : MarshalByRefObject, ILoggerReceiver
     {
         private static Logger log;
 
@@ -337,14 +337,24 @@ namespace DADSTORM
             log = _log;
         }
 
-        public void writeLine(string str, params object[] args)
+        public void writeLine(string str, string id, params object[] args)
         {
-            log.writeLineRemote(str, args);
+            Log.writeLine(str, id, args);
         }
 
-        public void write(string str, params object[] args)
+        public void write(string str, string id, params object[] args)
         {
-            log.writeRemote(str, args);
+            Log.write(str, id, args);
+        }
+
+        public void info(string str, string id, params object[] args)
+        {
+            Log.info(str, id, args);
+        }
+
+        public void debug(string str, string id, params object[] args)
+        {
+            Log.debug(str, id, args);
         }
 
         override public object InitializeLifetimeService()

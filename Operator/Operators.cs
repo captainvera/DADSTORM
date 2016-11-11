@@ -22,49 +22,49 @@ namespace DADSTORM
                 //This is a OperatorFactory / OperatorSource, not an Operator
                 //IOperator return OperatorFactory.create(OPNAME, ARGS);
                 case "DUP":
-                    Logger.writeLine("DUP operator started.", "OperatorSelector");
+                    Log.writeLine("DUP operator started.", "OperatorSelector");
                     return new DUP();
 
                 case "UNIQ":
-                    Logger.writeLine("UNIQ operator started.", "OperatorSelector");
+                    Log.writeLine("UNIQ operator started.", "OperatorSelector");
                     if (Int32.TryParse(args[0], out field) == true)
                         return new UNIQ(field);
                     else
                     {
-                        Logger.writeLine("ERROR: UNIQ operator could not be instanced, wrong arguments.", "OperatorSelector");
+                        Log.writeLine("ERROR: UNIQ operator could not be instanced, wrong arguments.", "OperatorSelector");
                         goto case "SAFE";
                     }
 
                 case "CUSTOM":
-                    Logger.writeLine("CUSTOM operator started.", "OperatorSelector");
+                    Log.writeLine("CUSTOM operator started.", "OperatorSelector");
                     if (args.Length == 3)
                         return new CUSTOM(args[0], args[1], args[2]);
                     else
                     {
-                        Logger.writeLine("ERROR: CUSTOM operator could not be instanced, wrong arguments.", "OperatorSelector");
+                        Log.writeLine("ERROR: CUSTOM operator could not be instanced, wrong arguments.", "OperatorSelector");
                         goto case "SAFE";
                     }
 
                 case "FILTER":
-                    Logger.writeLine("FILTER operator started.", "OperatorSelector");
+                    Log.writeLine("FILTER operator started.", "OperatorSelector");
                     if (args.Length == 3 && Int32.TryParse(args[0], out field) == true)
                         return new FILTER(field, args[1], args[2]);
                     else
                     {
-                        Logger.writeLine("ERROR: FILTER operator could not be instanced, wrong arguments.", "OperatorSelector");
+                        Log.writeLine("ERROR: FILTER operator could not be instanced, wrong arguments.", "OperatorSelector");
                         goto case "SAFE";
                     }
 
                 case "COUNT":
-                    Logger.writeLine("COUNT operator started.", "OperatorSelector");
+                    Log.writeLine("COUNT operator started.", "OperatorSelector");
                     return new COUNT();
 
                 case "SAFE":
-                    Logger.writeLine("ERROR: Instancing DUP as safe default.", "OperatorSelector");
+                    Log.writeLine("ERROR: Instancing DUP as safe default.", "OperatorSelector");
                     return new DUP();
 
                 default:
-                    Logger.writeLine("ERROR: Instancing DUP as safe default.", "OperatorSelector");
+                    Log.writeLine("ERROR: Instancing DUP as safe default.", "OperatorSelector");
                     return new DUP();
             }
 
@@ -116,7 +116,7 @@ namespace DADSTORM
         }
         public CUSTOM(string dll, string classLoad, string method)
         {
-            Logger.writeLine("Trying to load dll {0} , class {1} and method {2}", "CustomOPERATOR", dll, classLoad, method);
+            Log.writeLine("Trying to load dll {0} , class {1} and method {2}", "CustomOPERATOR", dll, classLoad, method);
                 
             byte[] bytes = System.IO.File.ReadAllBytes(@".\" + dll);
             Assembly assembly = Assembly.Load(bytes);
@@ -129,19 +129,19 @@ namespace DADSTORM
             }
             catch (ReflectionTypeLoadException e)
             {
-                Logger.writeLine("Failed loading type... Trying alternative", "CustomOPERATOR");
+                Log.writeLine("Failed loading type... Trying alternative", "CustomOPERATOR");
                 types = e.Types.Where(t => t != null);
             }
 
             foreach (Type type in types)
             {
-                Logger.writeLine("FOUND TYPE " + type.FullName, "CustomOPERATOR");
+                Log.writeLine("FOUND TYPE " + type.FullName, "CustomOPERATOR");
                 if (type.IsClass == true)
                 {
-                    Logger.writeLine("It's a class!", "CustomOPERATOR");
+                    Log.writeLine("It's a class!", "CustomOPERATOR");
                     if (type.FullName.EndsWith("." + classLoad))
                     {
-                        Logger.writeLine("It's our class ;)!", "CustomOPERATOR");
+                        Log.writeLine("It's our class ;)!", "CustomOPERATOR");
                         _type = type;
                     }
                 }
@@ -178,15 +178,15 @@ namespace DADSTORM
 
                     Tuple ret = new Tuple(lists[0].ToArray<string>());
 
-                    Logger.debug("Success with {0} tries", "CustomOperator.process()", tries +1);
+                    Log.debug("Success with {0} tries", "CustomOperator.process()", tries +1);
                     return ret;
                 }
                 catch (Exception e)
                 {
-                    Logger.debug("CAUGHT EXCEPTION AT INVOCATION: " + e.Message, "CustomOperator.process()");
+                    Log.debug("CAUGHT EXCEPTION AT INVOCATION: " + e.Message, "CustomOperator.process()");
                 }
                 tries++;
-                Logger.debug("Failed method invocation at try {0}, retrying...", "CustomOperator.process()", tries);
+                Log.debug("Failed method invocation at try {0}, retrying...", "CustomOperator.process()", tries);
             }
 
             return null;
@@ -257,7 +257,7 @@ namespace DADSTORM
         {
             if (_fieldNumber > t.getSize() - 1)
             {
-                Logger.debug("Field Number for UNIQ operator is out of range. fieldNumber = " + _fieldNumber + " | tuple.size = " + t.getSize());
+                Log.debug("Field Number for UNIQ operator is out of range. fieldNumber = " + _fieldNumber + " | tuple.size = " + t.getSize(), "FILTEROperator");
                 return null;
                 //Maybe use exception??
             }
@@ -314,7 +314,7 @@ namespace DADSTORM
 
             if (_fieldNumber > t.getSize() - 1)
             {
-                Logger.debug("Field Number for UNIQ operator is out of range. fieldNumber = " + _fieldNumber + " | tuple.size = " + t.getSize());
+                Log.debug("Field Number for UNIQ operator is out of range. fieldNumber = " + _fieldNumber + " | tuple.size = " + t.getSize(), "UNIQOperator");
                 return null;
                 //Maybe use exception??
             }

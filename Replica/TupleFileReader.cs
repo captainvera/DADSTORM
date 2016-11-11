@@ -29,7 +29,7 @@ namespace DADSTORM
             string line = null;
             while ((line = reader.ReadLine()) != null)
             {
-                Logger.debug(line, "TupleFileReader");
+                Log.debug(line, "TupleFileReader");
                 _tuples.Enqueue(line);
             }
             reader.Close();
@@ -56,7 +56,7 @@ namespace DADSTORM
             for(int i = 0; i < fields.Length; i++)
             {
                 res.set(i, fields[i]);
-                Logger.debug(fields[i] + " inserted at " + i, "TupleFileReader");
+                Log.debug(fields[i] + " inserted at " + i, "TupleFileReader");
                 
             }
             return res;
@@ -83,7 +83,7 @@ namespace DADSTORM
 
         public void process()
         {
-            Logger.writeLine("Starting outputting tuples to buffer", "TFRWorker");
+            Log.writeLine("Starting outputting tuples to buffer", "TFRWorker");
 
             _reader.readFile();
             Tuple tup;
@@ -94,7 +94,7 @@ namespace DADSTORM
                 _outputBuffer.Add(tup);
             }
 
-            Logger.writeLine("Finished reading file. Exiting...", "TFRWorker");
+            Log.writeLine("Finished reading file. Exiting...", "TFRWorker");
         }
     } 
 }
