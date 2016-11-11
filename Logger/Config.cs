@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace DADSTORM
 {
-    class Config
+    public class Config
     {
         /**
          * Logging level:
@@ -19,6 +19,25 @@ namespace DADSTORM
         public static void setLoggingLevel(int level)
         {
             Config.logLevel = level;
+        }
+
+        public static void setLoggingLevel(string level)
+        {
+            switch (level)
+            {
+                case "debug":
+                    Config.logLevel = 2;
+                    break;
+                case "full":
+                    Config.logLevel = 1;
+                    break;
+                case "light":
+                    Config.logLevel = 0;
+                    break;
+                default:
+                    Config.logLevel = 0;
+                    break;
+            }
         }
     }
 

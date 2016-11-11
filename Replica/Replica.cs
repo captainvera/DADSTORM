@@ -98,8 +98,10 @@ namespace DADSTORM {
             logging = dto.logging;
             semantics = dto.semantics;
             op_spec = dto.op_spec.ToArray();
-            
-            //"full" -> logging
+
+            //Setting global logging level for this process
+            Config.setLoggingLevel(logging);
+
             log = new RemoteLogger("Replica" + id + "-" + repNmbr.ToString(), dto.pmAdress);
 
             //Routing Strategy for this replica
