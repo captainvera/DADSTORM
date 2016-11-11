@@ -50,8 +50,7 @@ namespace DADSTORM
         {
             if (_replicas[0] != "X")
             {
-                Random rnd = new Random();
-                _parent.send(data, _replicas[rnd.Next(0, _replicas.Length)]);
+                _parent.send(data, _replicas[RandomGenerator.nextInt(0, _replicas.Length-1)]);
             }
             else
             {

@@ -164,11 +164,18 @@ namespace DADSTORM
                 foreach (var data in _in.GetConsumingEnumerable(_cancelToken))
                 {
                     res = _op.process(data);
+                    if (res != null)
+                    {
+                        Logger.debug(res.toString() + " | by : " + Thread.CurrentThread.ManagedThreadId);
 
-                    Logger.debug(res.toString() + " | by : " + Thread.CurrentThread.ManagedThreadId);
+                        _out.Add(res);
+                        res = null;
+                    }
+                    else
+                    {
+                        Logger.writeLine("Null tuple result, ignoring", "Thread" + Thread.CurrentThread.ManagedThreadId);
 
-                    _out.Add(res);
-                    res = null;
+                    }
                 }
             }
             catch (OperationCanceledException e)

@@ -10,80 +10,75 @@ using System.Globalization;
 
 namespace DADSTORM
 {
-    public class Operator : IOperator
+    public class OperatorFactory
     {
-        IOperator op;
 
-        public Operator(string opname, string[] args)
+        static public IOperator create(string opname, string[] args)
         {
             int field = 0;
             switch (opname)
             {
                 //Argument number checking?
                 //This is a OperatorFactory / OperatorSource, not an Operator
-                //IOperator op = OperatorFactory.create(OPNAME, ARGS);
+                //IOperator return OperatorFactory.create(OPNAME, ARGS);
                 case "DUP":
                     Logger.writeLine("DUP operator started.", "OperatorSelector");
-                    op = new DUP();
-                    return;
+                    return new DUP();
 
                 case "UNIQ":
                     Logger.writeLine("UNIQ operator started.", "OperatorSelector");
                     if (Int32.TryParse(args[0], out field) == true)
-                        op = new UNIQ(field);
+                        return new UNIQ(field);
                     else
                     {
                         Logger.writeLine("ERROR: UNIQ operator could not be instanced, wrong arguments.", "OperatorSelector");
                         goto case "SAFE";
                     }
-                    return;
 
                 case "CUSTOM":
                     Logger.writeLine("CUSTOM operator started.", "OperatorSelector");
                     if (args.Length == 3)
-                        op = new CUSTOM(args[0], args[1], args[3]);
+                        return new CUSTOM(args[0], args[1], args[2]);
                     else
                     {
                         Logger.writeLine("ERROR: CUSTOM operator could not be instanced, wrong arguments.", "OperatorSelector");
                         goto case "SAFE";
                     }
-                    return;
 
                 case "FILTER":
                     Logger.writeLine("FILTER operator started.", "OperatorSelector");
                     if (args.Length == 3 && Int32.TryParse(args[0], out field) == true)
-                        op = new FILTER(field, args[1], args[2]);
+                        return new FILTER(field, args[1], args[2]);
                     else
                     {
                         Logger.writeLine("ERROR: FILTER operator could not be instanced, wrong arguments.", "OperatorSelector");
                         goto case "SAFE";
                     }
-                    return;
 
                 case "COUNT":
                     Logger.writeLine("COUNT operator started.", "OperatorSelector");
-                    op = new COUNT();
-                    return;
+                    return new COUNT();
 
                 case "SAFE":
                     Logger.writeLine("ERROR: Instancing DUP as safe default.", "OperatorSelector");
-                    op = new DUP();
-                    return;
+                    return new DUP();
+
+                default:
+                    Logger.writeLine("ERROR: Instancing DUP as safe default.", "OperatorSelector");
+                    return new DUP();
             }
+
         }
 
-        public Tuple process(Tuple t)
-        {
-            return op.process(t);
-        }
     }
 
     public interface IOperator
     {
         Tuple process(Tuple t);
+        IList<IList<string>> CustomOperation(IList<string> l);
     }
 
-    public class COUNT : IOperator
+        public class COUNT : IOperator
     {
 
         private int _countNumber = 0;
@@ -100,6 +95,11 @@ namespace DADSTORM
         {
             return _countNumber;
         }
+
+        public IList<IList<string>> CustomOperation(IList<string> l)
+        {
+            return new List<IList<string>>();
+        }
     }
 
     public class CUSTOM : IOperator
@@ -109,12 +109,43 @@ namespace DADSTORM
         private Type _type;
         private object _instance;
 
+        public IList<IList<string>> CustomOperation(IList<string> l)
+        {
+            return new List<IList<string>>();
+
+        }
         public CUSTOM(string dll, string classLoad, string method)
         {
+            Logger.writeLine("Trying to load dll {0} , class {1} and method {2}", "CustomOPERATOR", dll, classLoad, method);
+                
+            byte[] bytes = System.IO.File.ReadAllBytes(@".\" + dll);
+            Assembly assembly = Assembly.Load(bytes);
 
-            Assembly assembly = Assembly.LoadFrom(dll);
+            IEnumerable<Type> types = null;
+             
+            try
+            {
+                types = assembly.GetTypes();
+            }
+            catch (ReflectionTypeLoadException e)
+            {
+                Logger.writeLine("Failed loading type... Trying alternative", "CustomOPERATOR");
+                types = e.Types.Where(t => t != null);
+            }
 
-            _type = assembly.GetType(dll + "." + classLoad);
+            foreach (Type type in types)
+            {
+                Logger.writeLine("FOUND TYPE " + type.FullName, "CustomOPERATOR");
+                if (type.IsClass == true)
+                {
+                    Logger.writeLine("It's a class!", "CustomOPERATOR");
+                    if (type.FullName.EndsWith("." + classLoad))
+                    {
+                        Logger.writeLine("It's our class ;)!", "CustomOPERATOR");
+                        _type = type;
+                    }
+                }
+            }
 
             if (_type == null)
                 throw new WrongParameterException("CUSTOM operator, cannot find:" + classLoad + " in dll:" + dll);
@@ -134,21 +165,42 @@ namespace DADSTORM
             List<string> listargs = t.toArray().ToList<string>();
 
             object[] args = new object[] { listargs };
-            object result = _method.Invoke(_instance, args);
+            object result = null;
 
-            IList<IList<string>> lists = (IList<IList<string>>)result;
+            int tries = 0;
 
-            Tuple ret = new Tuple(lists[0].ToArray<string>());
+            while (tries < 8)
+            {
+                try 
+                {
+                    result = _method.Invoke(_instance, args);
+                    IList<IList<string>> lists = (IList<IList<string>>)result;
 
-            Console.WriteLine("PANDA PANDA PANDA PANDA");
+                    Tuple ret = new Tuple(lists[0].ToArray<string>());
 
-            return ret;
+                    Logger.debug("Success with {0} tries", "CustomOperator.process()", tries +1);
+                    return ret;
+                }
+                catch (Exception e)
+                {
+                    Logger.debug("CAUGHT EXCEPTION AT INVOCATION: " + e.Message, "CustomOperator.process()");
+                }
+                tries++;
+                Logger.debug("Failed method invocation at try {0}, retrying...", "CustomOperator.process()", tries);
+            }
+
+            return null;
         }
 
     }
 
     public class DUP : IOperator
     {
+        public IList<IList<string>> CustomOperation(IList<string> l)
+        {
+            return new List<IList<string>>();
+        }
+
 
         public DUP()
         {
@@ -163,6 +215,11 @@ namespace DADSTORM
 
     public class FILTER : IOperator
     {
+        public IList<IList<string>> CustomOperation(IList<string> l)
+        {
+            return new List<IList<string>>();
+        }
+
 
         private int _fieldNumber;
         private string _condition;
@@ -231,7 +288,10 @@ namespace DADSTORM
 
     public class UNIQ : IOperator
     {
-
+        public IList<IList<string>> CustomOperation(IList<string> l)
+        {
+            return new List<IList<string>>();
+        }
         private int _fieldNumber;
         private SortedList _sorted;
 
@@ -246,6 +306,12 @@ namespace DADSTORM
         public Tuple process(Tuple t)
         {
 
+            if (_fieldNumber > t.getSize() - 1)
+            {
+                Logger.debug("Field Number for UNIQ operator is out of range. fieldNumber = " + _fieldNumber + " | tuple.size = " + t.getSize());
+                return null;
+                //Maybe use exception??
+            }
             string val = t.get(_fieldNumber);
 
             if (_sorted.Contains(val) == true)
