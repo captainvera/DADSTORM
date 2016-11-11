@@ -25,7 +25,7 @@ namespace DADSTORM
 
         public Dictionary<string, OperatorDTO> makeOperatorDTOs()
         {
-            Logger.debug("Building Operator drafts from previously split file.");
+            Logger.debug("Building Operator drafts from previously split file.", "Parser");
 
             Dictionary<string, OperatorDTO> operatorDTOs = new Dictionary<string, OperatorDTO>();
 
@@ -44,14 +44,14 @@ namespace DADSTORM
 
             while (n < splitFile.Length)
             {
-                Logger.debug("\nWord being filtered: {0} - n = {1}", splitFile[n], n);
+                Logger.debug("\nWord being filtered: {0} - n = {1}", "Parser", splitFile[n], n);
                 switch (splitFile[n])
                 {
                     case "input":
                         i = n + 2;
                         while (!splitFile[i].Equals("rep"))
                         {
-                            Logger.debug("Operator's input: {0}", splitFile[i]);
+                            Logger.debug("Operator's input: {0}", "Parser", splitFile[i]);
                             inputs.Add(splitFile[i]);
                             i++;
                         }
@@ -59,19 +59,19 @@ namespace DADSTORM
                         break;
                     case "rep":
                         rep = splitFile[n + 2];
-                        Logger.debug("Operator rep factor: {0}", rep);
+                        Logger.debug("Operator rep factor: {0}", "Parser", rep);
                         n += 2;
                         break;
                     case "routing":
                         rout = splitFile[n + 1];
-                        Logger.debug("Operator routing policy: {0}", rout);
+                        Logger.debug("Operator routing policy: {0}", "Parser", rout);
                         n++;
                         break;
                     case "address":
                         i = n + 1;
                         while (!splitFile[i].Equals("operator"))
                         {
-                            Logger.debug("Adresses: {0}", splitFile[i]);
+                            Logger.debug("Adresses: {0}", "Parser", splitFile[i]);
                             addr.Add(splitFile[i]);
                             port.Add(Parser.parsePortFromAddress(splitFile[i]));
                             i++;
@@ -82,7 +82,7 @@ namespace DADSTORM
                         i = n + 2;
                         while (!splitFile[i].Equals("input"))
                         {
-                            Logger.debug("Operator spec items: {0}. i = {1}", splitFile[i], i);
+                            Logger.debug("Operator spec items: {0}. i = {1}", "Parser", splitFile[i], i);
                             spec.Add(splitFile[i]);
                             i++;
                             if (i == splitFile.Count())
@@ -93,7 +93,7 @@ namespace DADSTORM
                         if (i < splitFile.Count())
                         {
                             spec.RemoveAt(spec.Count - 1);
-                            Logger.debug("spec array's current last item: {0}", spec[spec.Count - 1]);
+                            Logger.debug("spec array's current last item: {0}", "Parser", spec[spec.Count - 1]);
                             n = i - 2;
                         }
                         else
@@ -103,7 +103,7 @@ namespace DADSTORM
 
                         operatorDTOs.Add(id, new OperatorDTO(id, inputs, rep, rout, addr, spec, port));
 
-                        Logger.debug("Added new operator draft to ArrayList. Continue?");
+                        Logger.debug("Added new operator draft to ArrayList. Continue?", "Parser");
 
                         inputs = new List<string>();
                         addr = new List<string>();
@@ -113,8 +113,8 @@ namespace DADSTORM
                         break;
                     default:
                         id = splitFile[n];
-                        Logger.debug("New operator with id: {0}", id);
-                        Logger.debug("Entered default statement.");
+                        Logger.debug("New operator with id: {0}", "Parser", id);
+                        Logger.debug("Entered default statement.", "Parser");
                         break;
                 }
                 n++;
@@ -190,7 +190,7 @@ namespace DADSTORM
             char[] splitChars = { ' ', ',', '\t', '\n', '\r' };
             string[] splitFile = opDef.Split(splitChars, StringSplitOptions.RemoveEmptyEntries);
 
-            Logger.debug("Done splitting. Size = {0}. Continue?", splitFile.Count());
+            Logger.debug("Done splitting. Size = {0}. Continue?", "Parser", splitFile.Count());
 
             return splitFile;
         }
