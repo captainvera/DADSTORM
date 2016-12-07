@@ -202,7 +202,9 @@ namespace DADSTORM
                     else
                     {
                         Log.debug("Null tuple result, ignoring", "Thread" + Thread.CurrentThread.ManagedThreadId);
-
+                        Tuple t = new Tuple(0);
+                        t.setId(data.getId());
+                        _out.Add(t);
                     }
                 }
             }

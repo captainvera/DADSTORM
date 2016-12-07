@@ -12,7 +12,6 @@ namespace DADSTORM
 {
     public class OperatorFactory
     {
-
         static public IOperator create(string opname, string[] args)
         {
             int field = 0;
@@ -67,9 +66,7 @@ namespace DADSTORM
                     Log.writeLine("ERROR: Instancing DUP as safe default.", "OperatorSelector");
                     return new DUP();
             }
-
         }
-
     }
 
     public interface IOperator
@@ -78,16 +75,19 @@ namespace DADSTORM
         IList<IList<string>> CustomOperation(IList<string> l);
     }
 
-        public class COUNT : IOperator
+    public class COUNT : IOperator
     {
-
         private int _countNumber = 0;
 
         public Tuple process(Tuple t)
         {
+            _countNumber++;
+
             Tuple res = new Tuple(1);
             res.set(0, _countNumber.ToString());
-            _countNumber++;
+
+            res.setId(t.getId());
+
             return res;
         }
 
@@ -104,7 +104,6 @@ namespace DADSTORM
 
     public class CUSTOM : IOperator
     {
-
         private MethodInfo _method;
         private Type _type;
         private object _instance;
@@ -117,12 +116,12 @@ namespace DADSTORM
         public CUSTOM(string dll, string classLoad, string method)
         {
             Log.writeLine("Trying to load dll {0} , class {1} and method {2}", "CustomOPERATOR", dll, classLoad, method);
-                
+
             byte[] bytes = System.IO.File.ReadAllBytes(@".\" + dll);
             Assembly assembly = Assembly.Load(bytes);
 
             IEnumerable<Type> types = null;
-             
+
             try
             {
                 types = assembly.GetTypes();
@@ -156,12 +155,10 @@ namespace DADSTORM
                 throw new WrongParameterException("CUSTOM operator, type:" + _type.ToString() + " has no method:" + method + " receiving a list of Strings");
 
             _instance = Activator.CreateInstance(_type);
-
         }
 
         public Tuple process(Tuple t)
         {
-
             List<string> listargs = t.toArray().ToList<string>();
 
             object[] args = new object[] { listargs };
@@ -171,14 +168,17 @@ namespace DADSTORM
 
             while (tries < 8)
             {
-                try 
+                try
                 {
                     result = _method.Invoke(_instance, args);
                     IList<IList<string>> lists = (IList<IList<string>>)result;
 
                     Tuple ret = new Tuple(lists[0].ToArray<string>());
 
-                    Log.debug("Success with {0} tries", "CustomOperator.process()", tries +1);
+                    Log.debug("Success with {0} tries", "CustomOperator.process()", tries + 1);
+
+                    ret.setId(t.getId());
+
                     return ret;
                 }
                 catch (Exception e)
@@ -201,16 +201,16 @@ namespace DADSTORM
             return new List<IList<string>>();
         }
 
-
         public DUP()
         {
         }
 
         public Tuple process(Tuple t)
         {
-            return new Tuple(t);
-        }
+            Tuple ret = new Tuple(t);
 
+            return ret;
+        }
     }
 
     public class FILTER : IOperator
@@ -219,7 +219,6 @@ namespace DADSTORM
         {
             return new List<IList<string>>();
         }
-
 
         private int _fieldNumber;
         private string _condition;
@@ -231,7 +230,7 @@ namespace DADSTORM
         public FILTER(int fieldNumber, string condition, string testValue)
         {
 
-            _fieldNumber = fieldNumber;
+            _fieldNumber = fieldNumber - 1;
 
             if (_possibleConditions.Contains(condition))
             {
@@ -262,6 +261,7 @@ namespace DADSTORM
                 //Maybe use exception??
             }
 
+            Console.WriteLine("TEST: " + t.get(_fieldNumber) + " VS " + _stringValue);
             if (_isnumber)
             {
                 double tupleValue;
@@ -298,13 +298,14 @@ namespace DADSTORM
         {
             return new List<IList<string>>();
         }
+
         private int _fieldNumber;
         private SortedList _sorted;
 
         public UNIQ(int fieldNumber)
         {
 
-            _fieldNumber = fieldNumber;
+            _fieldNumber = fieldNumber - 1;
             _sorted = new SortedList();
 
         }
@@ -326,7 +327,6 @@ namespace DADSTORM
             _sorted.Add(val, val);
 
             return t;
-
         }
     }
 }

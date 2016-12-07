@@ -8,7 +8,7 @@ namespace DADSTORM
 {
     interface IRoutingStrategy
     {
-        void route(Tuple data);
+        int route(Tuple data);
     }
 
     class RoutingStrategyFactory
@@ -60,55 +60,52 @@ namespace DADSTORM
     {
         private string[] _replicas;
         private Replica _parent;
+        private int _next;
 
         public PrimaryRoutingStrategy(Replica parent)
         {
             _parent = parent;
+
+            _next = parent.getCommunicator().getNextReplicaCount();
             _replicas = parent.getOutputReplicas();
         }
 
-        public void route(Tuple data)
+        public int route(Tuple data)
         {
-            if (_replicas[0] != "X")
+            if (_next == 0)
             {
-                _parent.send(data, _replicas[0]);
+                return -1;
             }
-            else
-            {
-                Log.debug("End of streaming chain detected!", "PrimaryRouting");
-            }
+            return 0;
         }
     }
 
     class RandomRoutingStrategy : IRoutingStrategy
     {
-        private string[] _replicas;
         private Replica _parent;
+        private int _next;
 
         public RandomRoutingStrategy(Replica parent)
         {
             _parent = parent;
-            _replicas = parent.getOutputReplicas();
+            _next = parent.getCommunicator().getNextReplicaCount();
         }
 
-        public void route(Tuple data)
+        public int route(Tuple data)
         {
-            if (_replicas[0] != "X")
+            if (_next == 0)
             {
-                _parent.send(data, _replicas[RandomGenerator.nextInt(0, _replicas.Length-1)]);
+                return -1;
             }
-            else
-            {
-                Log.debug("End of streaming chain detected!", "RandomRouting");
-            }
+            return RandomGenerator.nextInt(0, _next-1);
         }
     }
 
     class HashRoutingStrategy : IRoutingStrategy
     {
-        private string[] _replicas;
         private Replica _parent;
         private int _fieldID;
+        private int _next;
 
         private int hash(Tuple data)
         {
@@ -116,28 +113,24 @@ namespace DADSTORM
 
             int val = 0;
             if (Int32.TryParse(field, out val) == true)
-                return val % _replicas.Length;
+                return val % _next;
             else return 0;
         }
 
         public HashRoutingStrategy(Replica parent, int fieldID)
         {
             _parent = parent;
-            _replicas = parent.getOutputReplicas();
+            _next = parent.getCommunicator().getNextReplicaCount();
             _fieldID = fieldID;
         }
 
-        public void route(Tuple data)
+        public int route(Tuple data)
         {
-            if (_replicas[0] != "X")
+            if (_next == 0)
             {
-                Random rnd = new Random();
-                _parent.send(data, _replicas[hash(data)]);
+                return -1;
             }
-            else
-            {
-                Log.debug("End of streaming chain detected!", "RandomRouting");
-            }
+            return hash(data);
         }
     }
 }

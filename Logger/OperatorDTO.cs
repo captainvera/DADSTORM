@@ -14,7 +14,11 @@ namespace DADSTORM
         public List<string> address = new List<string>();
         public List<string> ports = new List<string>();
         public List<string> op_spec = new List<string>();
-        public List<string> next_op_addresses = new List<string>();
+
+        public List<ReplicaRepresentation> next_op = new List<ReplicaRepresentation>();
+        public List<ReplicaRepresentation> before_op = new List<ReplicaRepresentation>();
+        public List<ReplicaRepresentation> current_op = new List<ReplicaRepresentation>();
+
         public string pmAdress;
         public int curr_rep;
         public string logging;
@@ -34,4 +38,32 @@ namespace DADSTORM
         }
     }
 
+    [Serializable]
+    public class ReplicaRepresentation
+    {
+        public string op;
+        public int rep;
+        public string addr;
+
+        public ReplicaRepresentation()
+        {
+            this.op = "";
+            this.addr = "";
+            this.rep = -1;
+        }
+
+        public ReplicaRepresentation(string op, int rep, string addr)
+        {
+            this.op = op;
+            this.addr = addr;
+            this.rep = rep;
+        }
+
+        public ReplicaRepresentation(ReplicaRepresentation rr)
+        {
+            this.op = rr.op;
+            this.addr = rr.addr;
+            this.rep = rr.rep;
+        }
+    }
 }

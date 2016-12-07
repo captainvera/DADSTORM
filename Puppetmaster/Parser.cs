@@ -128,9 +128,15 @@ namespace DADSTORM
             }
             Log.debug("Drafts all done.", "Parser");
 
-            //setting DTO's next_op_addresses parameter
+            //setting DTO's before and after parameter
             setNextOperatorAddress(operatorDTOs);
-            operatorDTOs.Last().Value.next_op_addresses.Add("X");
+            setPreviousOperatorAddress(operatorDTOs);
+
+            //Technically not needed
+            //setCurrentOperatorAdress(operatorDTOS);
+
+            //Should not be needed anymore aswell
+            //operatorDTOs.Last().Value.next_op.Add(new ReplicaRepresentation("X", 0, "X"));
 
             return operatorDTOs;
         }
@@ -141,9 +147,32 @@ namespace DADSTORM
             {
                 foreach (string input in op.input_ops)
                 {
+                    int i = 0;
                     if (input.StartsWith("OP"))
                     {
-                        opDTOs[input].next_op_addresses = opDTOs[input].next_op_addresses.Concat(op.address).ToList();
+                        foreach (string addr in op.address) {
+                            opDTOs[input].next_op.Add(new ReplicaRepresentation(op.op_id, i, addr));
+                            i++;
+                        }
+                        //opDTOs[input].next_op_addresses = opDTOs[input].next_op_addresses.Concat(op.address).ToList();
+                    }
+                }
+            }
+        }
+
+        public void setPreviousOperatorAddress(Dictionary<string, OperatorDTO> opDTOs)
+        {
+            foreach (OperatorDTO op in opDTOs.Values)
+            {
+                foreach (string input in op.input_ops)
+                {
+                    int i = 0;
+                    if (input.StartsWith("OP"))
+                    {
+                        foreach (string addr in opDTOs[input].address) {
+                            op.before_op.Add(new ReplicaRepresentation(input, i, addr));
+                            i++;
+                        }
                     }
                 }
             }
@@ -230,7 +259,7 @@ namespace DADSTORM
 
         public static string parseIPFromAddress(string address)
         {
-            string IPRegex = @"tcp://[0-9\.]+:";
+            string IPRegex = @"tcp://[0-9\.a-zA-Z]+:";
             Match mc = Regex.Match(address, IPRegex);
             string IP = mc.Value;
             return IP.Substring(0, IP.Length - 1);

@@ -14,7 +14,7 @@ namespace DADSTORM
          * 1 - full
          * 2 - Debug
          */
-        public static int logLevel = 0;
+        public static int logLevel = 2;
 
         public static void setLoggingLevel(int level)
         {

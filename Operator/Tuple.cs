@@ -11,17 +11,67 @@ namespace DADSTORM
     {
         private int _size;
         private string[] _items;
+        private TupleId _id;
+        
+        public Tuple()
+        {
+            _size = 0;
+            _items = new string[0];
+            _id = new TupleId(generateId());
+        }
+
+        public Tuple(int size, TupleId id)
+        {
+            _size = size; 
+            _items = new string[size];
+            _id = id;
+            _id = new TupleId(generateId());
+        }
 
         public Tuple(int size)
         {
             _size = size; 
             _items = new string[size];
+            _id = new TupleId(generateId());
         }
 
         public Tuple(Tuple tup){
             _items = tup.toArray();
             _size = _items.Length;
-            
+            _id = new TupleId();
+            setId(tup.getId());
+        }
+
+        public void update(String op, int rep)
+        {
+            if(_id == null)
+            {
+                Console.WriteLine("WTTFFFFFFFFFFFFFFFFFFFFFFFFFFF");
+            }
+            _id.op = op;
+            _id.rep = rep;
+        }
+
+        public static string generateId()
+        {
+            //Random 11 digit id
+            //TODO::Make sure these can't repeat on the same replica!
+            double r = RandomGenerator.nextLong(100000000000, 899999999999);
+            r += 100000000000;
+            String id = r.ToString();
+            return id;
+        }
+        
+        public TupleId getId()
+        {
+            return _id;
+        }
+
+        public void setId(TupleId id)
+        {
+            _id.id = id.id;
+            _id.op = id.op;
+            _id.rep = id.rep;
         }
 
         public Tuple(string[] str)
@@ -75,6 +125,51 @@ namespace DADSTORM
         public int getSize()
         {
             return _size;
+        }
+
+        public void stamp(ReplicaRepresentation r)
+        {
+            _id.op = r.op;
+            _id.rep = r.rep;
+        }
+    }
+
+    [Serializable]
+    public class TupleId
+    {
+        public string id;
+        public string op;
+        public int rep;
+
+        public TupleId()
+        {
+            this.id = "";
+            this.op = "";
+            this.rep = -1;
+        }
+
+        public TupleId(string id, string op, int rep)
+        {
+            this.id = id;
+            this.op = op;
+            this.rep = rep;
+        }
+
+        public TupleId(string id)
+        {
+            this.id = id;
+            this.op = "";
+            this.rep = -1;
+        }
+
+        public String getUID()
+        {
+            return id;
+        }
+
+        public string toString()
+        {
+            return id + "(" + op + "->" + rep + ")";
         }
     }
 }

@@ -91,6 +91,7 @@ namespace DADSTORM
             logger.writeLine("Creating operator " + op.op_id);
             for(int i=0; i<op.address.Count; i++)
             {
+                Console.WriteLine("-------- " + op.address[i]);
                 string PCSaddress = Parser.parseIPFromAddress(op.address[i]) + ":10000/pcs";
                 op.curr_rep = i;
                 createReplica(PCSaddress, op);

@@ -14,11 +14,13 @@ namespace DADSTORM
 
         private Queue<string> _tuples;
         private string _file;
+        private ReplicaRepresentation _rep;
 
-        public TupleFileReader(string file)
+        public TupleFileReader(string file, ReplicaRepresentation r)
         {
             _tuples = new Queue<string>();
             _file = file;
+            _rep = r;
 
         }
 
@@ -61,10 +63,21 @@ namespace DADSTORM
             string[] fields = tup.Split(splitChars, StringSplitOptions.RemoveEmptyEntries);
 
             Tuple res = new Tuple(fields.Length);
+
+            res.stamp(_rep);
+
             for(int i = 0; i < fields.Length; i++)
             {
-                res.set(i, fields[i]);
-                Log.debug(fields[i] + " inserted at " + i, "TupleFileReader");
+                string str = fields[i];
+
+                if (str.Contains("\""))
+                {
+                    Console.WriteLine("String" + str + " contained \"");
+                    str = str.Replace("\"", "");
+                    Console.WriteLine("Result : " + str );
+                } 
+                res.set(i, str);
+               // Log.debug(str + " inserted at " + i, "TupleFileReader");
             }
             return res;
         }
@@ -75,12 +88,14 @@ namespace DADSTORM
         private TupleFileReader _reader;
         private BlockingCollection<Tuple> _outputBuffer;
         private Thread _wthread;
+        private Replica _rep;
 
-        public TupleFileReaderWorker(BlockingCollection<Tuple> output, string file)
+        public TupleFileReaderWorker(BlockingCollection<Tuple> output, string file, Replica rep)
         {
             _outputBuffer = output;
-            _reader = new TupleFileReader(file);
+            _reader = new TupleFileReader(file, rep.getRepresentation());
             _wthread = new Thread(this.process);
+            _rep = rep;
         }
 
         public void start()
@@ -98,7 +113,11 @@ namespace DADSTORM
             tup = null;
             while((tup = _reader.getNextTuple()) != null)
             {
-                _outputBuffer.Add(tup);
+                Log.writeLine("Tuple is " + tup.toString(), "TFRWorker");
+                Log.writeLine("Adding tuple with id " + tup.getId().id + "->" +tup.getId().op + "->" + tup.getId().rep, "TFRWorker");
+
+                //_outputBuffer.Add(tup);
+                _rep.input(tup);
             }
 
             Log.writeLine("Finished reading file. Exiting...", "TFRWorker");

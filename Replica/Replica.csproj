@@ -44,6 +44,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ReplicaCommunicator.cs" />
+    <Compile Include="TupleTables.cs" />
     <Compile Include="OperatorWorker.cs" />
     <Compile Include="Replica.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
