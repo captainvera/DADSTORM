@@ -98,6 +98,20 @@ namespace DADSTORM
             return r;
         }
 
+        public ReplicaHolder getNextReplicaHolder(int rep)
+        {
+            ReplicaHolder r;
+            next_replicas.TryGetValue(rep, out r);
+            return r;
+        }
+
+        public ReplicaHolder getPrevReplicaHolder(int rep)
+        {
+            ReplicaHolder r;
+            previous_replicas.TryGetValue(rep, out r);
+            return r;
+        }
+
         public Replica getOwnReplica(int rep)
         {
             ReplicaHolder r;

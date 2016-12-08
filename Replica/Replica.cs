@@ -188,7 +188,7 @@ namespace DADSTORM
 
             //Are you alive setup
             log.debug("Setting up \"Are you alive\" requests");
-            Timer timer = new Timer(isalive, null, 5000, 5000);
+            Timer timer = new Timer(isAlive, null, 5000, 5000);
 
             //Check if we have input files
             tfr_workers = new List<TupleFileReaderWorker>();
@@ -273,40 +273,57 @@ namespace DADSTORM
         
         public void subNext(int deadRepIndex, int new_boss)
         {
-            log.debug();
+            log.debug("Subbing next rep " + deadRepIndex + "for rep " + new_boss);
             getCommunicator().setNextCorrespondence(getCommunicator().getNextReplicaHolder(new_boss), deadRepIndex);
         }
 
-        public void subOwn(int deadRepIndex)
+        public void subOwn(int deadRepIndex, int new_boss)
         {
+            log.debug("Subbing own rep " + deadRepIndex + "for rep " + new_boss);
             getCommunicator().setOwnCorrespondence(getCommunicator().getOwnReplicaHolder(rep_number), deadRepIndex);
         }
 
-        public void subPrev(int deadRepIndex)
+        public void subPrev(int deadRepIndex, int new_boss)
         {
+            log.debug("Subbing prev rep " + deadRepIndex + "for rep " + new_boss);
             getCommunicator().setPrevCorrespondence(getCommunicator().getOwnReplicaHolder(rep_number), deadRepIndex);
         }
 
-        public void takeOver(int deadRepIndex)
+        public void reinstatePrev(ReplicaHolder repH)
         {
-            log.debug("taking over for rep: " + deadRepIndex);
+            getCommunicator().setPrevCorrespondence(repH, repH.representation.rep);
+        }
+
+        public void reinstateOwn(ReplicaHolder repH)
+        {
+            getCommunicator().setOwnCorrespondence(repH, repH.representation.rep);
+        }
+
+        public void reinstateNext(ReplicaHolder repH)
+        {
+            getCommunicator().setNextCorrespondence(repH, repH.representation.rep);
+        }
+
+        public void takeOver(int dead_rep_index)
+        {
+            log.debug("taking over for rep: " + dead_rep_index);
             //fix previous operator's replica's "routing tables"
             log.debug("Fixing preivous op's tables");
             for (int repN = 0; repN < getCommunicator().getPreviousReplicaCount(); repN++)
             {
                 log.debug("Accessing prev rep: " + repN);
                 Replica prevRep = getCommunicator().getPreviousReplica(repN);
-                prevRep.subNext(deadRepIndex, rep_number);
+                prevRep.subNext(dead_rep_index, rep_number);
             }
 
             //fix colleague replica's "routing tables"
             for (int repN = 0; repN< comm.getOwnReplicaCount(); repN++)
             {
-                if (repN != rep_number || repN != deadRepIndex)//skip it self and downed replica
+                if (repN != rep_number || repN != dead_rep_index)//skip it self and downed replica
                 {
                     log.debug("Accessing colleague rep: " + repN);
                     Replica colleagueReplica = comm.getOwnReplica(repN);
-                    colleagueReplica.subOwn(deadRepIndex);
+                    colleagueReplica.subOwn(dead_rep_index, rep_number);
                 }  
             }
 
@@ -315,18 +332,19 @@ namespace DADSTORM
             {
                 log.debug("Accessing next rep: " + repN);
                 Replica nextRep = comm.getNextReplica(repN);
-                nextRep.subPrev(deadRepIndex);
+                nextRep.subPrev(dead_rep_index, rep_number);
             }
         }
 
         //reinstates replica's place when coming back from the dead
         public void reinstate()
         {
+            ReplicaHolder rep = comm.getOwnReplicaHolder(getRepresentation().rep);
             //fix previous operator's replica's "routing tables"
             for (int repN = 0; repN < comm.getPreviousReplicaCount(); repN++)
             {
                 Replica prevRep = comm.getPreviousReplica(repN);
-                prevRep.comm.setNextCorrespondence(comm.getOwnReplicaHolder(rep_number), rep_number);
+                prevRep.reinstateNext(rep);
             }
             //fix colleague replica's "routing tables"
             for (int repN = 0; repN < comm.getOwnReplicaCount(); repN++)
@@ -334,7 +352,7 @@ namespace DADSTORM
                 if (repN != rep_number)
                 {
                     Replica colleagueRep = comm.getOwnReplica(repN);
-                    colleagueRep.comm.setNextCorrespondence(comm.getOwnReplicaHolder(rep_number), rep_number);
+                    colleagueRep.reinstateOwn(rep);
                 }
             }
 
@@ -342,7 +360,7 @@ namespace DADSTORM
             for(int repN = 0; repN < comm.getNextReplicaCount(); repN++)
             {
                 Replica nextRep = comm.getNextReplica(repN);
-                nextRep.comm.setPrevCorrespondence(comm.getOwnReplicaHolder(rep_number), rep_number);
+                nextRep.reinstatePrev(rep);
             }
         }
 
@@ -512,7 +530,7 @@ namespace DADSTORM
             return new ReplicaRepresentation(op_id, rep_number, address);
         }
 
-        public void isalive(Object obj)
+        public void isAlive(Object obj)
         {
             int toPing = takeOverCandidateIndex(rep_number);
             try
