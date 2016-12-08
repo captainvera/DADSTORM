@@ -9,7 +9,7 @@ namespace DADSTORM
 {
     public static class RandomGenerator
     {
-        static int seed = Environment.TickCount;
+        static int seed = Environment.TickCount +  System.Diagnostics.Process.GetCurrentProcess().Id; 
 
         static readonly ThreadLocal<Random> random =
             new ThreadLocal<Random>(() => new Random(Interlocked.Increment(ref seed)));

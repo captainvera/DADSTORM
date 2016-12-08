@@ -271,6 +271,65 @@ namespace DADSTORM
             }
         }
 
+        public void takeOver(int deadRepIndex)
+        {
+            //fix previous operator's replica's "routing tables"
+            for (int repN = 0; repN < comm.getPreviousReplicaCount(); repN++)
+            {
+                Replica prevRep = comm.getPreviousReplica(repN);
+                prevRep.comm.setNextCorrespondence(comm.getOwnReplicaHolder(rep_number), deadRepIndex);
+            }
+
+            //fix colleague replica's "routing tables"
+            for (int repN = 0; repN< comm.getOwnReplicaCount(); repN++)
+            {
+                if (repN != rep_number)//skip it self
+                {
+                    Replica colleagueReplica = comm.getOwnReplica(repN);
+                    colleagueReplica.comm.setOwnCorrespondence(comm.getOwnReplicaHolder(rep_number), deadRepIndex);
+                }  
+            }
+
+            //fix downward replica's "routing tables"
+            for(int repN = 0; repN < comm.getNextReplicaCount(); repN++)
+            {
+                Replica nextRep = comm.getNextReplica(repN);
+                nextRep.comm.setPrevCorrespondence(comm.getOwnReplicaHolder(rep_number), deadRepIndex);
+            }
+        }
+
+        //reinstates replica's place when coming back from the dead
+        public void reinstate()
+        {
+            //fix previous operator's replica's "routing tables"
+            for (int repN = 0; repN < comm.getPreviousReplicaCount(); repN++)
+            {
+                Replica prevRep = comm.getPreviousReplica(repN);
+                prevRep.comm.setNextCorrespondence(comm.getOwnReplicaHolder(rep_number), rep_number);
+            }
+            //fix colleague replica's "routing tables"
+            for (int repN = 0; repN < comm.getOwnReplicaCount(); repN++)
+            {
+                if (repN != rep_number)
+                {
+                    Replica colleagueRep = comm.getOwnReplica(repN);
+                    colleagueRep.comm.setNextCorrespondence(comm.getOwnReplicaHolder(rep_number), rep_number);
+                }
+            }
+
+            //fix downward replica's "routing tables"
+            for(int repN = 0; repN < comm.getNextReplicaCount(); repN++)
+            {
+                Replica nextRep = comm.getNextReplica(repN);
+                nextRep.comm.setPrevCorrespondence(comm.getOwnReplicaHolder(rep_number), rep_number);
+            }
+        }
+
+        public int takeOverCandidateIndex(int previousIndex)
+        {
+            return (previousIndex + 1) % comm.getNextReplicaCount();
+        }
+
         public void send(Tuple t, int dest)
         {
             log.info("tuple " + address + " " + t.toString());
@@ -289,7 +348,21 @@ namespace DADSTORM
                 Console.WriteLine("F\nF\nF\nF\nF\nF\nF\nF\nF\nF\nFUUUUUUUUUUUUUUCK. I was trying to send to " + dest + " but failed in getting the object");
             }
 
-            bool res = next.input(t);
+            bool res = false;
+
+            try
+            {
+                res = next.input(t);
+            }
+            catch (Exception e)//TODO failed to connect exception
+            {
+                log.info("Exception when sending tuple: " + e);
+                int candidateIndex = takeOverCandidateIndex(dest);
+                Replica takeoverCandidate = comm.getNextReplica(candidateIndex);
+                takeoverCandidate.takeOver(dest);
+                send(t, candidateIndex); //might be dangerous
+                return;
+            }
 
             if (res)
             {
@@ -341,6 +414,7 @@ namespace DADSTORM
             //Is this necessary?
             //RemotingServices.Connect(typeof(Replica), "op", this);
             op_pool.unfreezeAll();
+            reinstate();
         }
 
         public void readFile()
