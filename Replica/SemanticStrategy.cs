@@ -231,9 +231,10 @@ namespace DADSTORM
         //add a node in a synchronized way
         public void syncSharedTables(TupleRecord tr)
         {
-            for (int i = 0; i < rep.getReplicationFactor(); i++) {
+            for (int i = 0; i < rep.getCommunicator().getOwnReplicaCount(); i++) {
                 if (i != rep.getReplicaNumber())
                 {
+                    Console.WriteLine("Sending tuple record " + tr.getUID() + " to " + i);
                     rep.getCommunicator().getOwnReplica(i).addRecord(tr);
                 }
             }
