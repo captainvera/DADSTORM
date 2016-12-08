@@ -36,6 +36,7 @@ namespace DADSTORM
 
             IDictionary propBag = new Hashtable();
             propBag["port"] = Int32.Parse(port);
+            propBag["timeout"] = 1 * 3000;
             propBag["name"] = "tcpClientServer";  // here enter unique channel name
 
             TcpChannel channel = new TcpChannel(propBag, new BinaryClientFormatterSinkProvider(), new BinaryServerFormatterSinkProvider());
@@ -73,6 +74,8 @@ namespace DADSTORM
         private Boolean primary;
         private Boolean running;
         private Boolean frozen;
+        private Boolean interval_active;
+        private int interval_time;
         private string op_id, port, replication, routing, address, logging, semantics;
         private string[] output, op_spec;
         private List<ReplicaRepresentation> input_ops;
@@ -118,6 +121,8 @@ namespace DADSTORM
             primary = false;
             running = false;
             frozen = false;
+            interval_active = false;
+            interval_time = 0;
 
             //Some parameteres are unnecessary, remove later
             op_id = dto.op_id;
@@ -205,8 +210,17 @@ namespace DADSTORM
             log.writeLine("Now online but not processing");
         }
 
+        public void enforceState()
+        {
+            while(frozen)
+            {
+                Thread.Sleep(50);
+            }
+        }
+
         public void inputSafe(Tuple t)
         {
+            enforceState();
             log.debug("Received tuple " + t.toString());
 
             if (sem.accept(t))
@@ -217,6 +231,8 @@ namespace DADSTORM
 
         public bool input(Tuple t)
         {
+            enforceState();
+
             log.debug("Received tuple " + t.toString());
             if (sem.accept(t))
             {
@@ -273,42 +289,57 @@ namespace DADSTORM
         
         public void subNext(int deadRepIndex, int new_boss)
         {
+            enforceState();
+
             log.debug("Subbing next rep " + deadRepIndex + "for rep " + new_boss);
             getCommunicator().setNextCorrespondence(getCommunicator().getNextReplicaHolder(new_boss), deadRepIndex);
         }
 
+
         public void subOwn(int deadRepIndex, int new_boss)
         {
+            enforceState();
+
             log.debug("Subbing own rep " + deadRepIndex + "for rep " + new_boss);
-            getCommunicator().setOwnCorrespondence(getCommunicator().getOwnReplicaHolder(rep_number), deadRepIndex);
+            getCommunicator().setOwnCorrespondence(getCommunicator().getOwnReplicaHolder(new_boss), deadRepIndex);
         }
 
         public void subPrev(int deadRepIndex, int new_boss)
         {
+            enforceState();
+
             log.debug("Subbing prev rep " + deadRepIndex + "for rep " + new_boss);
-            getCommunicator().setPrevCorrespondence(getCommunicator().getOwnReplicaHolder(rep_number), deadRepIndex);
+            getCommunicator().setPrevCorrespondence(getCommunicator().getPrevReplicaHolder(new_boss), deadRepIndex);
         }
 
         public void reinstatePrev(ReplicaHolder repH)
         {
+            enforceState();
+
             getCommunicator().setPrevCorrespondence(repH, repH.representation.rep);
         }
 
         public void reinstateOwn(ReplicaHolder repH)
         {
+            enforceState();
+
             getCommunicator().setOwnCorrespondence(repH, repH.representation.rep);
         }
 
         public void reinstateNext(ReplicaHolder repH)
         {
+            enforceState();
+
             getCommunicator().setNextCorrespondence(repH, repH.representation.rep);
         }
 
         public void takeOver(int dead_rep_index)
         {
+            enforceState();
+
             log.debug("taking over for rep: " + dead_rep_index);
             //fix previous operator's replica's "routing tables"
-            log.debug("Fixing preivous op's tables");
+            log.debug("Fixing previous op's tables");
             for (int repN = 0; repN < getCommunicator().getPreviousReplicaCount(); repN++)
             {
                 log.debug("Accessing prev rep: " + repN);
@@ -319,9 +350,9 @@ namespace DADSTORM
             //fix colleague replica's "routing tables"
             for (int repN = 0; repN< comm.getOwnReplicaCount(); repN++)
             {
-                if (repN != rep_number || repN != dead_rep_index)//skip it self and downed replica
+                if (repN != rep_number && repN != dead_rep_index)//skip it self and downed replica
                 {
-                    log.debug("Accessing colleague rep: " + repN);
+                    log.debug("Accessing colleague rep: " + repN + " and pointing to me: " + rep_number);
                     Replica colleagueReplica = comm.getOwnReplica(repN);
                     colleagueReplica.subOwn(dead_rep_index, rep_number);
                 }  
@@ -339,6 +370,8 @@ namespace DADSTORM
         //reinstates replica's place when coming back from the dead
         public void reinstate()
         {
+            enforceState();
+
             ReplicaHolder rep = comm.getOwnReplicaHolder(getRepresentation().rep);
             //fix previous operator's replica's "routing tables"
             for (int repN = 0; repN < comm.getPreviousReplicaCount(); repN++)
@@ -366,17 +399,24 @@ namespace DADSTORM
 
         public int takeOverNextCandidateIndex(int previousIndex)
         {
+            enforceState();
+
             return (previousIndex + 1) % comm.getNextReplicaCount();
         }
 
         public int takeOverCandidateIndex(int previousIndex)
         {
+            enforceState();
+
             return (previousIndex + 1) % comm.getOwnReplicaCount();
         }
 
-        public void send(Tuple t, int dest)
+        private void send(Tuple t, int dest)
         {
             log.info("tuple " + address + " " + t.toString());
+
+            if (interval_active)
+                Thread.Sleep(interval_time);
 
             //Updating operator identifier with last replica processing
             string prev_op = t.getId().op;
@@ -401,10 +441,17 @@ namespace DADSTORM
             catch (Exception e)//TODO failed to connect exception
             {
                 log.debug("Exception when sending tuple: " + e);
+
+                //startTakeover(dest);
+
                 int candidateIndex = takeOverNextCandidateIndex(dest);
                 Replica takeoverCandidate = comm.getNextReplica(candidateIndex);
+
                 takeoverCandidate.takeOver(dest);
+
+                //it's dangerous really 
                 send(t, candidateIndex); //might be dangerous
+
                 return;
             }
 
@@ -420,18 +467,24 @@ namespace DADSTORM
             }
         }
 
-        public Boolean isPrimary()
+        private Boolean isPrimary()
         {
+            enforceState();
+
             return primary;
         }
 
-        public string[] getOutputReplicas()
+        private string[] getOutputReplicas()
         {
+            enforceState();
+
             return output;
         }
 
         public string ping(string value)
         {
+            enforceState();
+
             log.info("Received (echo) ping command -\n " + value);
             return value;
         }
@@ -448,6 +501,8 @@ namespace DADSTORM
             //Is this necessary?
             //How can we receive unfreeze if we disconnect the remote object?
             //RemotingServices.Disconnect(this);
+
+            // Freezes all current processing
             op_pool.freezeAll();
         }
 
@@ -457,12 +512,17 @@ namespace DADSTORM
             log.info("Received unfreeze command");
             //Is this necessary?
             //RemotingServices.Connect(typeof(Replica), "op", this);
+
+            // Unfreezes all current processing
             op_pool.unfreezeAll();
+
             reinstate();
         }
 
         public void readFile()
         {
+            enforceState();
+
             string file = @"..\..\..\tweeters.dat";
             log.info("Processing file: " + file);
             TupleFileReaderWorker tfrw = new TupleFileReaderWorker(input_buffer, file, this);
@@ -504,33 +564,46 @@ namespace DADSTORM
         public int interval(int time)
         {
             log.info("Received interval command with time " + time);
-            op_pool.intervalAll(time);
+            //op_pool.intervalAll(time);
+
+            interval_time = time;
+            interval_active = true;
+            
             return time;
         }
 
         public void addRecord(TupleRecord tr)
         {
+            enforceState();
+
             Console.WriteLine("------->Received tuple record: id:" + tr.getUID() + " | from " + tr.id.op + "->" + tr.id.rep);
             sem.addRecord(tr);               
         }
 
         public void purgeRecord(TupleRecord tr)
         {
+            enforceState();
+
             Console.WriteLine("------>Received purge record notice id:" + tr.getUID() + " | from " + tr.id.op + "->" + tr.id.rep);
             sem.purgeRecord(tr);
         }
         public void tupleConfirmed(string uid)
         {
+            enforceState();
+
             Console.WriteLine("------Got confirmation for delivery of " + uid);
             sem.tupleConfirmed(uid);
         }
 
         public ReplicaRepresentation getRepresentation()
         {
+            enforceState();
+
             return new ReplicaRepresentation(op_id, rep_number, address);
         }
 
-        public void isAlive(Object obj)
+        //wtf, argument?
+        private void isAlive(Object obj)
         {
             int toPing = takeOverCandidateIndex(rep_number);
             try
@@ -540,9 +613,16 @@ namespace DADSTORM
             {
                 log.writeLine("Replica->" + (rep_number + 1) % comm.getOwnReplicaCount() + " is dead!!! WARN THE OTHERS!");
 
-                int next = takeOverCandidateIndex(toPing);
-                comm.getOwnReplica(next).takeOver(toPing);
+                startTakeover(toPing);
+
+                log.writeLine("Done taking over");
             }
+        }
+
+        private void startTakeover(int rep)
+        {
+                int next = takeOverCandidateIndex(rep);
+                comm.getOwnReplica(next).takeOver(rep);
         }
     }
 }

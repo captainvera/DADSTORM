@@ -141,6 +141,8 @@ namespace DADSTORM
         {
             if (next_replicas.ContainsKey(n))
                 next_replicas.Remove(n);
+
+            Log.debug("Setting next correspondence of " + n + " to " + rr.rep, "ReplicaCommunicator");
             next_replicas.Add(n, new ReplicaHolder(rr, r));
         }
 
@@ -148,6 +150,8 @@ namespace DADSTORM
         {
             if (previous_replicas.ContainsKey(n))
                 previous_replicas.Remove(n);
+
+            Log.debug("Setting prev correspondence of " + n + " to " + rh.representation.rep, "ReplicaCommunicator");
             previous_replicas.Add(n, rh);
         }
 
@@ -155,6 +159,8 @@ namespace DADSTORM
         {
             if (next_replicas.ContainsKey(n))
                 next_replicas.Remove(n);
+
+            Log.debug("Setting  next correspondence of " + n + " to " + rh.representation.rep, "ReplicaCommunicator");
             next_replicas.Add(n, rh);
         }
 
@@ -162,6 +168,8 @@ namespace DADSTORM
         {
             if (own_replicas.ContainsKey(n))
                 own_replicas.Remove(n);
+
+            Log.debug("Setting  own correspondence of " + n + " to " + rh.representation.rep, "ReplicaCommunicator");
             own_replicas.Add(n, rh);
         }
 

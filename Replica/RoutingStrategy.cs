@@ -58,7 +58,6 @@ namespace DADSTORM
 
     class PrimaryRoutingStrategy : IRoutingStrategy
     {
-        private string[] _replicas;
         private Replica _parent;
         private int _next;
 
@@ -67,7 +66,6 @@ namespace DADSTORM
             _parent = parent;
 
             _next = parent.getCommunicator().getNextReplicaCount();
-            _replicas = parent.getOutputReplicas();
         }
 
         public int route(Tuple data)
