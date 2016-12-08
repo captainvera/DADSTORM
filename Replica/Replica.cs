@@ -10,6 +10,7 @@ using System.Collections;
 using System.Xml.Serialization;
 using System.IO;
 using System.Collections.Concurrent;
+using System.Threading;
 
 namespace DADSTORM
 {
@@ -184,6 +185,10 @@ namespace DADSTORM
             input_buffer = new BlockingCollection<Tuple>();
             output_buffer = new BlockingCollection<Tuple>();
             op_pool = new OperatorWorkerPool(1, op, input_buffer, output_buffer);
+
+            //Are you alive setup
+            log.debug("Setting up \"Are you alive\" requests");
+            Timer timer = new Timer(isalive, null, 5000, 5000);
 
             //Check if we have input files
             tfr_workers = new List<TupleFileReaderWorker>();
@@ -405,6 +410,19 @@ namespace DADSTORM
         public ReplicaRepresentation getRepresentation()
         {
             return new ReplicaRepresentation(op_id, rep_number, address);
+        }
+
+        public void isalive(Object obj)
+        {
+            try
+            {
+                comm.getOwnReplica((rep_number+1)%comm.getOwnReplicaCount()).ping("alive?");
+                //getContender(rep_number).ping("alive?");
+            } catch (Exception e)
+            {
+                log.writeLine("Replica->" + (rep_number + 1) % comm.getOwnReplicaCount() + " is dead!!! WARN THE OTHERS!");
+            }
+ 
         }
     }
 }

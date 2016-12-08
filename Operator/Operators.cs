@@ -173,6 +173,7 @@ namespace DADSTORM
                     result = _method.Invoke(_instance, args);
                     IList<IList<string>> lists = (IList<IList<string>>)result;
 
+                    //TODO::XXX::Make tuples great again! (send all received tuples, not just list[0])
                     Tuple ret = new Tuple(lists[0].ToArray<string>());
 
                     Log.debug("Success with {0} tries", "CustomOperator.process()", tries + 1);
