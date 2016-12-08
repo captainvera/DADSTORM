@@ -91,6 +91,13 @@ namespace DADSTORM
             return previous_replicas.Count;
         }
 
+        public ReplicaHolder getOwnReplicaHolder(int rep)
+        {
+            ReplicaHolder r;
+            own_replicas.TryGetValue(rep, out r);
+            return r;
+        }
+
         public Replica getOwnReplica(int rep)
         {
             ReplicaHolder r;
@@ -123,12 +130,28 @@ namespace DADSTORM
             next_replicas.Add(n, new ReplicaHolder(rr, r));
         }
 
+        public void setPrevCorrespondence(ReplicaHolder rh, int n)
+        {
+            if (previous_replicas.ContainsKey(n))
+                previous_replicas.Remove(n);
+            previous_replicas.Add(n, rh);
+        }
+
         public void setNextCorrespondence(ReplicaHolder rh, int n)
         {
             if (next_replicas.ContainsKey(n))
                 next_replicas.Remove(n);
             next_replicas.Add(n, rh);
         }
+
+        public void setOwnCorrespondence(ReplicaHolder rh, int n)
+        {
+            if (own_replicas.ContainsKey(n))
+                own_replicas.Remove(n);
+            own_replicas.Add(n, rh);
+        }
+
+
     }
 
     public class ReplicaHolder
