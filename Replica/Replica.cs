@@ -270,31 +270,52 @@ namespace DADSTORM
                 send(data, dest);
             }
         }
+        
+        public void subNext(int deadRepIndex, int new_boss)
+        {
+            log.debug();
+            getCommunicator().setNextCorrespondence(getCommunicator().getNextReplicaHolder(new_boss), deadRepIndex);
+        }
+
+        public void subOwn(int deadRepIndex)
+        {
+            getCommunicator().setOwnCorrespondence(getCommunicator().getOwnReplicaHolder(rep_number), deadRepIndex);
+        }
+
+        public void subPrev(int deadRepIndex)
+        {
+            getCommunicator().setPrevCorrespondence(getCommunicator().getOwnReplicaHolder(rep_number), deadRepIndex);
+        }
 
         public void takeOver(int deadRepIndex)
         {
+            log.debug("taking over for rep: " + deadRepIndex);
             //fix previous operator's replica's "routing tables"
-            for (int repN = 0; repN < comm.getPreviousReplicaCount(); repN++)
+            log.debug("Fixing preivous op's tables");
+            for (int repN = 0; repN < getCommunicator().getPreviousReplicaCount(); repN++)
             {
-                Replica prevRep = comm.getPreviousReplica(repN);
-                prevRep.comm.setNextCorrespondence(comm.getOwnReplicaHolder(rep_number), deadRepIndex);
+                log.debug("Accessing prev rep: " + repN);
+                Replica prevRep = getCommunicator().getPreviousReplica(repN);
+                prevRep.subNext(deadRepIndex, rep_number);
             }
 
             //fix colleague replica's "routing tables"
             for (int repN = 0; repN< comm.getOwnReplicaCount(); repN++)
             {
-                if (repN != rep_number)//skip it self
+                if (repN != rep_number || repN != deadRepIndex)//skip it self and downed replica
                 {
+                    log.debug("Accessing colleague rep: " + repN);
                     Replica colleagueReplica = comm.getOwnReplica(repN);
-                    colleagueReplica.comm.setOwnCorrespondence(comm.getOwnReplicaHolder(rep_number), deadRepIndex);
+                    colleagueReplica.subOwn(deadRepIndex);
                 }  
             }
 
             //fix downward replica's "routing tables"
             for(int repN = 0; repN < comm.getNextReplicaCount(); repN++)
             {
+                log.debug("Accessing next rep: " + repN);
                 Replica nextRep = comm.getNextReplica(repN);
-                nextRep.comm.setPrevCorrespondence(comm.getOwnReplicaHolder(rep_number), deadRepIndex);
+                nextRep.subPrev(deadRepIndex);
             }
         }
 
@@ -325,9 +346,14 @@ namespace DADSTORM
             }
         }
 
-        public int takeOverCandidateIndex(int previousIndex)
+        public int takeOverNextCandidateIndex(int previousIndex)
         {
             return (previousIndex + 1) % comm.getNextReplicaCount();
+        }
+
+        public int takeOverCandidateIndex(int previousIndex)
+        {
+            return (previousIndex + 1) % comm.getOwnReplicaCount();
         }
 
         public void send(Tuple t, int dest)
@@ -356,8 +382,8 @@ namespace DADSTORM
             }
             catch (Exception e)//TODO failed to connect exception
             {
-                log.info("Exception when sending tuple: " + e);
-                int candidateIndex = takeOverCandidateIndex(dest);
+                log.debug("Exception when sending tuple: " + e);
+                int candidateIndex = takeOverNextCandidateIndex(dest);
                 Replica takeoverCandidate = comm.getNextReplica(candidateIndex);
                 takeoverCandidate.takeOver(dest);
                 send(t, candidateIndex); //might be dangerous
@@ -488,15 +514,17 @@ namespace DADSTORM
 
         public void isalive(Object obj)
         {
+            int toPing = takeOverCandidateIndex(rep_number);
             try
             {
-                comm.getOwnReplica((rep_number+1)%comm.getOwnReplicaCount()).ping("alive?");
-                //getContender(rep_number).ping("alive?");
+                comm.getOwnReplica(toPing).ping("i am number->" + rep_number+ " and you, are you alive?");
             } catch (Exception e)
             {
                 log.writeLine("Replica->" + (rep_number + 1) % comm.getOwnReplicaCount() + " is dead!!! WARN THE OTHERS!");
+
+                int next = takeOverCandidateIndex(toPing);
+                comm.getOwnReplica(next).takeOver(toPing);
             }
- 
         }
     }
 }
