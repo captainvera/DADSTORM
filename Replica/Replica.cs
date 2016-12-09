@@ -312,22 +312,28 @@ namespace DADSTORM
             getCommunicator().setPrevCorrespondence(getCommunicator().getPrevReplicaHolder(new_boss), deadRepIndex);
         }
 
-        public void reinstatePrev(ReplicaHolder repH)
+        public void reinstatePrev(ReplicaRepresentation rep)
         {
+            ReplicaHolder repH = new ReplicaHolder(rep);
             enforceState();
+            log.debug("reinstating prev to index " + repH.representation.rep);
 
             getCommunicator().setPrevCorrespondence(repH, repH.representation.rep);
         }
 
-        public void reinstateOwn(ReplicaHolder repH)
+        public void reinstateOwn(ReplicaRepresentation rep)
         {
+            ReplicaHolder repH = new ReplicaHolder(rep);
             enforceState();
+            log.debug("reinstating own to index " + repH.representation.rep);
 
             getCommunicator().setOwnCorrespondence(repH, repH.representation.rep);
         }
 
-        public void reinstateNext(ReplicaHolder repH)
+        public void reinstateNext(ReplicaRepresentation rep)
         {
+            ReplicaHolder repH = new ReplicaHolder(rep);
+            log.debug("reinstating next to index " + repH.representation.rep);
             enforceState();
 
             getCommunicator().setNextCorrespondence(repH, repH.representation.rep);
@@ -373,16 +379,28 @@ namespace DADSTORM
         //reinstates replica's place when coming back from the dead
         public void reinstate()
         {
+            log.debug("Starting reinstate process");
             enforceState();
 
-            ReplicaHolder rep = comm.getOwnReplicaHolder(getRepresentation().rep);
+            ReplicaRepresentation rep = new ReplicaRepresentation(op_id, rep_number, address);
+
+            log.debug("Fixing previous op's replicas");
             //fix previous operator's replica's "routing tables"
             for (int repN = 0; repN < comm.getPreviousReplicaCount(); repN++)
             {
+                log.debug("reinstating prev op of index :" + repN);
                 Replica prevRep = comm.getPreviousReplica(repN);
-                prevRep.reinstateNext(rep);
+                try
+                {
+                    prevRep.reinstateNext(rep);
+                }
+                catch(Exception e)
+                {
+                    Console.WriteLine("failed to reinstate prev rep of index: " + repN + "  caught exception: " + e);
+                }
             }
             //fix colleague replica's "routing tables"
+            log.debug("Fixing colleague replica's");
             for (int repN = 0; repN < comm.getOwnReplicaCount(); repN++)
             {
                 if (repN != rep_number)
@@ -393,7 +411,8 @@ namespace DADSTORM
             }
 
             //fix downward replica's "routing tables"
-            for(int repN = 0; repN < comm.getNextReplicaCount(); repN++)
+            log.debug("Fixing next op's replicas");
+            for (int repN = 0; repN < comm.getNextReplicaCount(); repN++)
             {
                 Replica nextRep = comm.getNextReplica(repN);
                 nextRep.reinstatePrev(rep);
