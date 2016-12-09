@@ -79,6 +79,21 @@ namespace DADSTORM
             return null;
         }
 
+        public Replica getReplica(OperatorPosition pos, int rep) 
+        {
+            switch (pos)
+            {
+                case OperatorPosition.Previous:
+                    return getPreviousReplica(rep);
+                case OperatorPosition.Own:
+                    return getOwnReplica(rep);
+                case OperatorPosition.Next:
+                    return getNextReplica(rep);
+                default:
+                    return null;
+            }
+        }
+
         public Replica getPreviousReplica(int rep)
         {
             ReplicaHolder r;
@@ -172,8 +187,149 @@ namespace DADSTORM
             Log.debug("Setting  own correspondence of " + n + " to " + rh.representation.rep, "ReplicaCommunicator");
             own_replicas.Add(n, rh);
         }
+        
+        public T TryCallPrev<T>(Func<T> f, int target)
+        {
+            int tries = 0;
+            while (tries < 3)
+            {
+                try
+                {
+                    return f();
+                }
+                catch (Exception e)
+                {
+                    tries++;
+                    System.Threading.Thread.Sleep(1000);
+                }
+            }
+            return default(T);
+        }
 
+        public T TryCallOwn<T>(Func<T> f, int target)
+        {
+            try
+            {
+                return f();
+            }
+            catch(Exception e)
+            {
+                return default(T);
+            }
+        }
 
+        public T TryCallNext<T>(Func<T> f, int target)
+        {
+            try
+            {
+                return f();
+            }
+            catch(Exception e)
+            {
+                return default(T);
+            }
+        }
+
+        public bool input(OperatorPosition pos, int rep, Tuple t)
+        {
+            int tries = 0;
+            while (tries < 3)
+            {
+                Replica r = getReplica(pos, rep);
+                try
+                {
+                    return r.input(t);
+                }
+                catch (Exception e)
+                {
+                    tries++;
+                    System.Threading.Thread.Sleep(1000);
+                }
+            }
+            return false;
+        }
+
+        public bool tupleConfirmed(OperatorPosition pos, int rep, string uid)
+        {
+            int tries = 0;
+            while (tries < 3)
+            {
+                Replica r = getReplica(pos, rep);
+                try
+                {
+                    return r.tupleConfirmed(uid);           
+                }
+                catch (Exception e)
+                {
+                    tries++;
+                    System.Threading.Thread.Sleep(1000);
+                }
+            }
+            return false;
+        }
+
+        public bool addRecord(OperatorPosition pos, int rep, TupleRecord tr)
+        {
+            int tries = 0;
+            while (tries < 3)
+            {
+                Replica r = getReplica(pos, rep);
+                try
+                {
+                    return r.addRecord(tr);
+                }
+                catch (Exception e)
+                {
+                    tries++;
+                    System.Threading.Thread.Sleep(1000);
+                }
+            }
+            return false;
+        }
+
+        public bool purgeRecord(OperatorPosition pos, int rep, TupleRecord tr)
+        {
+            int tries = 0;
+            while (tries < 3)
+            {
+                Replica r = getReplica(pos, rep);
+                try
+                {
+                    return r.purgeRecord(tr);
+                }
+                catch (Exception e)
+                {
+                    tries++;
+                    System.Threading.Thread.Sleep(1000);
+                }
+            }
+            return false;
+        }
+
+        public Tuple fetchTuple(OperatorPosition pos, int rep, TupleRecord tr)
+        {
+            int tries = 0;
+            while (tries < 3)
+            {
+                Replica r = getReplica(pos, rep);
+                try
+                {
+                    return r.fetchTuple(tr);           
+                }
+                catch (Exception e)
+                {
+                    tries++;
+                    System.Threading.Thread.Sleep(1000);
+                }
+            }
+            return null;
+        }
+    }
+
+    public enum OperatorPosition {
+        Previous,
+        Own,
+        Next            
     }
 
     public class ReplicaHolder

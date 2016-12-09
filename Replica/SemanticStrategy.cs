@@ -187,15 +187,15 @@ namespace DADSTORM
             Console.WriteLine("Delivering confirmation to " + init_op + "->" + init_rep);
 
             //Replica r = rep.getCommunicator().getPreviousReplica(init_op, init_rep);
-            Replica r = rep.getCommunicator().getPreviousReplica(init_rep);
-
-            //Node that sent doesn't exist?!
-            if(r == null)
-            {
-                Console.WriteLine("NODE THAT SENT DOESN'T EXIST!!");
-            }
-
-            r.tupleConfirmed(t.getId().getUID());
+            //Replica r = rep.getCommunicator().getPreviousReplica(init_rep);
+            ////Node that sent doesn't exist?!
+            //if(r == null)
+            //{
+            //    Console.WriteLine("NODE THAT SENT DOESN'T EXIST!!");
+            //}
+            ////r.tupleConfirmed(t.getId().getUID());
+            //rep.getCommunicator().TryCallPrev(() => r.tupleConfirmed(t.getId().getUID()), init_rep);
+            rep.getCommunicator().tupleConfirmed(OperatorPosition.Previous, init_rep, t.getId().getUID());
 
             //Then purge all shared tables
             purgeSharedTables(t.getId().getUID());
@@ -246,7 +246,10 @@ namespace DADSTORM
                 if (i != rep.getReplicaNumber())
                 {
                     Console.WriteLine("Sending tuple record " + tr.getUID() + " to " + i);
-                    rep.getCommunicator().getOwnReplica(i).addRecord(tr);
+
+                    //Replica r = rep.getCommunicator().getOwnReplica(i);
+                    //rep.getCommunicator().TryCallOwn(() => r.addRecord(tr), i);
+                    rep.getCommunicator().addRecord(OperatorPosition.Own, i, tr);
                 }
             }
         }
@@ -259,10 +262,13 @@ namespace DADSTORM
                 Console.WriteLine("!!!!!!ERROR!!!!! Purged tuple record doesn't exist on node");
                 return;
             }
+
             for (int i = 0; i < rep.getReplicationFactor(); i++) {
                 if (i != rep.getReplicaNumber())
                 {
-                    rep.getCommunicator().getOwnReplica(i).purgeRecord(tr);
+                    //Replica r = rep.getCommunicator().getOwnReplica(i);
+                    //rep.getCommunicator().TryCallOwn(() => r.purgeRecord(tr), i);
+                    rep.getCommunicator().purgeRecord(OperatorPosition.Own, i, tr);
                 }
             }
         }
@@ -285,8 +291,11 @@ namespace DADSTORM
         }
         private void resend(TupleRecord tr)
         {
-            Replica r = rep.getCommunicator().getPreviousReplica(tr.id.rep);
-            Tuple t = rep.fetchTuple(tr);
+            //Replica r = rep.getCommunicator().getPreviousReplica(tr.id.rep);
+            //Tuple t = rep.getCommunicator().TryCallOwn(() => r.fetchTuple(tr), tr.id.rep);
+            Tuple t = rep.getCommunicator().fetchTuple(OperatorPosition.Previous, tr.id.rep, tr);
+
+            //Tuple t = r.fetchTuple(tr);
 
             if(t == null)
             {

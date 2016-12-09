@@ -193,7 +193,12 @@ namespace DADSTORM
 
             //Are you alive setup
             log.debug("Setting up \"Are you alive\" requests");
-            Timer timer = new Timer(isAlive, null, 5000, 5000);
+
+            //Timer timer = new Timer(isAlive, null, 5000, 5000);
+            log.debug("Starting timer for alive ping");
+            Thread timer = new Thread(new ThreadStart(isAliveT));
+            timer.IsBackground = true;
+            timer.Start();
 
             //Check if we have input files
             tfr_workers = new List<TupleFileReaderWorker>();
@@ -287,59 +292,71 @@ namespace DADSTORM
             }
         }
         
-        public void subNext(int deadRepIndex, int new_boss)
+        public bool subNext(int deadRepIndex, int new_boss)
         {
             enforceState();
 
             log.debug("Subbing next rep " + deadRepIndex + "for rep " + new_boss);
             getCommunicator().setNextCorrespondence(getCommunicator().getNextReplicaHolder(new_boss), deadRepIndex);
+
+            return true;
         }
 
 
-        public void subOwn(int deadRepIndex, int new_boss)
+        public bool subOwn(int deadRepIndex, int new_boss)
         {
             enforceState();
 
             log.debug("Subbing own rep " + deadRepIndex + "for rep " + new_boss);
             getCommunicator().setOwnCorrespondence(getCommunicator().getOwnReplicaHolder(new_boss), deadRepIndex);
+
+            return true;
         }
 
-        public void subPrev(int deadRepIndex, int new_boss)
+        public bool subPrev(int deadRepIndex, int new_boss)
         {
             enforceState();
 
             log.debug("Subbing prev rep " + deadRepIndex + "for rep " + new_boss);
             getCommunicator().setPrevCorrespondence(getCommunicator().getPrevReplicaHolder(new_boss), deadRepIndex);
+
+            return true;
         }
 
-        public void reinstatePrev(ReplicaRepresentation rep)
+        public bool reinstatePrev(ReplicaRepresentation rep)
         {
             ReplicaHolder repH = new ReplicaHolder(rep);
             enforceState();
             log.debug("reinstating prev to index " + repH.representation.rep);
 
             getCommunicator().setPrevCorrespondence(repH, repH.representation.rep);
+
+            return true;
         }
 
-        public void reinstateOwn(ReplicaRepresentation rep)
+        public bool reinstateOwn(ReplicaRepresentation rep)
         {
             ReplicaHolder repH = new ReplicaHolder(rep);
             enforceState();
             log.debug("reinstating own to index " + repH.representation.rep);
 
             getCommunicator().setOwnCorrespondence(repH, repH.representation.rep);
+
+            return true;
         }
 
-        public void reinstateNext(ReplicaRepresentation rep)
+        public bool reinstateNext(ReplicaRepresentation rep)
         {
             ReplicaHolder repH = new ReplicaHolder(rep);
             log.debug("reinstating next to index " + repH.representation.rep);
             enforceState();
 
             getCommunicator().setNextCorrespondence(repH, repH.representation.rep);
+
+            return true;
         }
 
-        public void takeOver(int dead_rep_index)
+        public bool takeOver(int dead_rep_index)
         {
             enforceState();
 
@@ -351,6 +368,8 @@ namespace DADSTORM
                 log.debug("Accessing prev rep: " + repN);
                 Replica prevRep = getCommunicator().getPreviousReplica(repN);
                 prevRep.subNext(dead_rep_index, rep_number);
+                //comm.TryCallNext(() => prevRep.subNext(dead_rep_index, rep_number), repN);
+                //comm.sub(OperatorPosition.Next, repN, dead_rep_index, rep_number);
             }
 
             //fix colleague replica's "routing tables"
@@ -361,6 +380,8 @@ namespace DADSTORM
                     log.debug("Accessing colleague rep: " + repN + " and pointing to me: " + rep_number);
                     Replica colleagueReplica = comm.getOwnReplica(repN);
                     colleagueReplica.subOwn(dead_rep_index, rep_number);
+                    //comm.TryCallOwn( () => colleagueReplica.subOwn(dead_rep_index, rep_number), repN);
+                    //comm.sub(OperatorPosition.Own, repN, dead_rep_index, rep_number);
                 }  
             }
 
@@ -370,10 +391,14 @@ namespace DADSTORM
                 log.debug("Accessing next rep: " + repN);
                 Replica nextRep = comm.getNextReplica(repN);
                 nextRep.subPrev(dead_rep_index, rep_number);
+                //comm.TryCallPrev(() => nextRep.subPrev(dead_rep_index, rep_number), repN);
+                //comm.sub(OperatorPosition.Previous, repN, dead_rep_index, rep_number);
             }
 
             //Now solve all missing tuples if necessary
             sem.fix(dead_rep_index);
+
+            return true;
         }
 
         //reinstates replica's place when coming back from the dead
@@ -389,10 +414,12 @@ namespace DADSTORM
             for (int repN = 0; repN < comm.getPreviousReplicaCount(); repN++)
             {
                 log.debug("reinstating prev op of index :" + repN);
-                Replica prevRep = comm.getPreviousReplica(repN);
+
                 try
                 {
+                    Replica prevRep = comm.getPreviousReplica(repN);
                     prevRep.reinstateNext(rep);
+                    //comm.reinstate(OperatorPosition.Previous, repN, rep);
                 }
                 catch(Exception e)
                 {
@@ -407,6 +434,8 @@ namespace DADSTORM
                 {
                     Replica colleagueRep = comm.getOwnReplica(repN);
                     colleagueRep.reinstateOwn(rep);
+                    //comm.TryCallOwn(()=>colleagueRep.reinstateOwn(rep), repN);
+                    //comm.reinstate(OperatorPosition.Own, repN, rep);
                 }
             }
 
@@ -415,6 +444,7 @@ namespace DADSTORM
             for (int repN = 0; repN < comm.getNextReplicaCount(); repN++)
             {
                 Replica nextRep = comm.getNextReplica(repN);
+                //comm.TryCallNext(()=>nextRep.reinstatePrev(rep), repN);
                 nextRep.reinstatePrev(rep);
             }
         }
@@ -464,12 +494,12 @@ namespace DADSTORM
             {
                 log.debug("Exception when sending tuple: " + e);
 
-                //startTakeover(dest);
-
                 int candidateIndex = takeOverNextCandidateIndex(dest);
                 Replica takeoverCandidate = comm.getNextReplica(candidateIndex);
+                takeoverCandidate.takeOver(dest); 
 
-                takeoverCandidate.takeOver(dest);
+                //comm.TryCallNext(() => takeoverCandidate.takeOver(dest), candidateIndex);
+                //comm.takeOver(OperatorPosition.Next, candidateIndex, dest);
 
                 //it's dangerous really 
                 send(t, candidateIndex); //might be dangerous
@@ -507,7 +537,7 @@ namespace DADSTORM
         {
             enforceState();
 
-            log.info("Received (echo) ping command -\n " + value);
+            //log.info("Received (echo) ping command -\n " + value);
             return value;
         }
 
@@ -594,27 +624,32 @@ namespace DADSTORM
             return time;
         }
 
-        public void addRecord(TupleRecord tr)
+        public bool addRecord(TupleRecord tr)
         {
             enforceState();
 
             Console.WriteLine("------->Received tuple record: id:" + tr.getUID() + " | from " + tr.id.op + "->" + tr.id.rep);
-            sem.addRecord(tr);               
+            sem.addRecord(tr);
+
+            return true;
         }
 
-        public void purgeRecord(TupleRecord tr)
+        public bool purgeRecord(TupleRecord tr)
         {
             enforceState();
 
             Console.WriteLine("------>Received purge record notice id:" + tr.getUID() + " | from " + tr.id.op + "->" + tr.id.rep);
             sem.purgeRecord(tr);
+
+            return true;
         }
-        public void tupleConfirmed(string uid)
+        public bool tupleConfirmed(string uid)
         {
             enforceState();
 
             Console.WriteLine("------Got confirmation for delivery of " + uid);
             sem.tupleConfirmed(uid);
+            return true;
         }
 
         public ReplicaRepresentation getRepresentation()
@@ -641,10 +676,34 @@ namespace DADSTORM
             }
         }
 
+        private void isAliveT()
+        {
+            Thread.Sleep(5000);
+
+            int toPing = takeOverCandidateIndex(rep_number);
+            try
+            {
+                comm.getOwnReplica(toPing).ping("i am number->" + rep_number+ " and you, are you alive?");
+            } catch (Exception e)
+            {
+                log.writeLine("Replica->" + (rep_number + 1) % comm.getOwnReplicaCount() + " is dead!!! WARN THE OTHERS!");
+
+                startTakeover(toPing);
+
+                log.writeLine("Done taking over");
+            }
+            isAliveT();
+        }
+
+
         private void startTakeover(int rep)
         {
-                int next = takeOverCandidateIndex(rep);
-                comm.getOwnReplica(next).takeOver(rep);
+            int next = takeOverCandidateIndex(rep);
+
+            Replica r = comm.getOwnReplica(next);
+            r.takeOver(rep);
+            //comm.TryCallOwn(()=>r.takeOver(rep), next);
+            //comm.takeOver(OperatorPosition.Next, next, rep);
         }
 
         public Tuple fetchTuple(TupleRecord tr)
