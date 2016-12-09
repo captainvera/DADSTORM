@@ -24,22 +24,22 @@ namespace DADSTORM
 
         public void parseDto(OperatorDTO dto)
         {
-            Console.WriteLine("-------------------- Node connectivity ----------------------");
-            Console.WriteLine("...................... Before .......................");
+            Console.WriteLine("----------------------- Node connectivity Table -----------------------");
+            Console.WriteLine("....................... Before .......................");
             foreach(ReplicaRepresentation rr in dto.before_op)
             {
                 Console.WriteLine("REPLICA " + rr.rep +  " of " + rr.op + " in address " + rr.addr);
                 previous_replicas.Add(rr.rep, new ReplicaHolder(rr));
             }
 
-            Console.WriteLine("...................... After .......................");
+            Console.WriteLine("....................... After .......................");
             foreach(ReplicaRepresentation rr in dto.next_op)
             {
                 Console.WriteLine("REPLICA " + rr.rep +  " of " + rr.op + " in address " + rr.addr);
                 next_replicas.Add(rr.rep, new ReplicaHolder(rr));
             }
 
-            Console.WriteLine("...................... Current .......................");
+            Console.WriteLine("....................... Current .......................");
             int i = 0;
             foreach(string s in dto.address)
             {
@@ -188,52 +188,11 @@ namespace DADSTORM
             own_replicas.Add(n, rh);
         }
         
-        public T TryCallPrev<T>(Func<T> f, int target)
-        {
-            int tries = 0;
-            while (tries < 3)
-            {
-                try
-                {
-                    return f();
-                }
-                catch (Exception e)
-                {
-                    tries++;
-                    System.Threading.Thread.Sleep(1000);
-                }
-            }
-            return default(T);
-        }
-
-        public T TryCallOwn<T>(Func<T> f, int target)
-        {
-            try
-            {
-                return f();
-            }
-            catch(Exception e)
-            {
-                return default(T);
-            }
-        }
-
-        public T TryCallNext<T>(Func<T> f, int target)
-        {
-            try
-            {
-                return f();
-            }
-            catch(Exception e)
-            {
-                return default(T);
-            }
-        }
-
         public bool input(OperatorPosition pos, int rep, Tuple t)
         {
             int tries = 0;
-            while (tries < 3)
+            //We assume that the network will always eventually recover
+            while (tries < 100)
             {
                 Replica r = getReplica(pos, rep);
                 try
@@ -243,6 +202,7 @@ namespace DADSTORM
                 catch (Exception e)
                 {
                     tries++;
+                    Console.WriteLine("!!!!!!!!!!Failed input call... retrying!!!!!!!!!!!");
                     System.Threading.Thread.Sleep(1000);
                 }
             }
@@ -262,6 +222,7 @@ namespace DADSTORM
                 catch (Exception e)
                 {
                     tries++;
+                    Console.WriteLine("!!!!!!!!!!failed tuple confirmed!!!!!!!!!!!!!!!");
                     System.Threading.Thread.Sleep(1000);
                 }
             }
@@ -281,6 +242,7 @@ namespace DADSTORM
                 catch (Exception e)
                 {
                     tries++;
+                    Console.WriteLine("!!!!!!!!!!!!!!!!!! failed addrecord !!!!!!!!!!");
                     System.Threading.Thread.Sleep(1000);
                 }
             }
@@ -300,6 +262,7 @@ namespace DADSTORM
                 catch (Exception e)
                 {
                     tries++;
+                    Console.WriteLine("!!!!!!!!!!!!!!!!!!! purgeRecord !!!!!!!!!!!!!!!!!");
                     System.Threading.Thread.Sleep(1000);
                 }
             }
@@ -319,6 +282,7 @@ namespace DADSTORM
                 catch (Exception e)
                 {
                     tries++;
+                    Console.WriteLine("!!!!!!!!!!!!!!!!!!!! fetchTuple !!!!!!!!!!!!!!!!!!");
                     System.Threading.Thread.Sleep(1000);
                 }
             }

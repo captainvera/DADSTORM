@@ -79,8 +79,10 @@ namespace DADSTORM
         private string op_id, port, replication, routing, address, logging, semantics;
         private string[] output, op_spec;
         private List<ReplicaRepresentation> input_ops;
+
         private int rep_number;
         private int rep_factor;
+
         private List<int> indexes_owned = new List<int>();
 
         /** ------------------- Multithreading ---------------------------- **/
@@ -164,6 +166,7 @@ namespace DADSTORM
                 Console.WriteLine("STARTING TASK");
                 System.Threading.Thread.Sleep(5000);
                 Console.WriteLine("PINGING");
+
                 foreach (ReplicaRepresentation rr in dto.before_op)
                 {
                     Console.WriteLine("--------- PINGING" + "Hello from " + dto.op_id + " and " + rep_number);
@@ -796,6 +799,11 @@ namespace DADSTORM
         public void injectInput(Tuple t)
         {
             input_buffer.Add(t);
+        }
+
+        public List<int> getIndexesOwned()
+        {
+            return indexes_owned;
         }
     }
 }

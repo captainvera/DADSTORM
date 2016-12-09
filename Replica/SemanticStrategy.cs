@@ -243,7 +243,7 @@ namespace DADSTORM
         public void syncSharedTables(TupleRecord tr)
         {
             for (int i = 0; i < rep.getCommunicator().getOwnReplicaCount(); i++) {
-                if (i != rep.getReplicaNumber())
+                if (!rep.getIndexesOwned().Contains(i))
                 {
                     Console.WriteLine("Sending tuple record " + tr.getUID() + " to " + i);
 
@@ -264,7 +264,7 @@ namespace DADSTORM
             }
 
             for (int i = 0; i < rep.getReplicationFactor(); i++) {
-                if (i != rep.getReplicaNumber())
+                if (!rep.getIndexesOwned().Contains(i))
                 {
                     //Replica r = rep.getCommunicator().getOwnReplica(i);
                     //rep.getCommunicator().TryCallOwn(() => r.purgeRecord(tr), i);
