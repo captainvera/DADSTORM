@@ -480,7 +480,11 @@ namespace DADSTORM
             log.info("tuple " + address + " " + t.toString());
 
             if (interval_active)
+            {
+
+                log.info("Applying interval delay " + interval_time);
                 Thread.Sleep(interval_time);
+            }
 
             //Updating operator identifier with last replica processing
             string prev_op = t.getId().op;
@@ -489,35 +493,37 @@ namespace DADSTORM
             t.update(op_id, rep_number);
 
             //Replica next = (Replica)Activator.GetObject(typeof(Replica), dest);
-            Replica next = comm.getNextReplica(dest);
+            //Replica next = comm.getNextReplica(dest);
 
-            if(next == null)
-            {
-                Console.WriteLine("F\nF\nF\nF\nF\nF\nF\nF\nF\nF\nFUUUUUUUUUUUUUUCK. I was trying to send to " + dest + " but failed in getting the object");
-            }
+            //if(next == null)
+            //{
+            //    Console.WriteLine("F\nF\nF\nF\nF\nF\nF\nF\nF\nF\nFUUUUUUUUUUUUUUCK. I was trying to send to " + dest + " but failed in getting the object");
+            //}
 
             bool res = false;
 
-            try
-            {
-                res = next.input(t);
-            }
-            catch (Exception e)//TODO failed to connect exception
-            {
-                log.debug("Exception when sending tuple: " + e);
+            //try
+            //{
+            //    res = next.input(t);
+            //}
+            //catch (Exception e)//TODO failed to connect exception
+            //{
+            //    log.debug("Exception when sending tuple: " + e);
 
-                int candidateIndex = takeOverNextCandidateIndex(dest);
-                Replica takeoverCandidate = comm.getNextReplica(candidateIndex);
-                takeoverCandidate.takeOver(dest); 
+            //    int candidateIndex = takeOverNextCandidateIndex(dest);
+            //    Replica takeoverCandidate = comm.getNextReplica(candidateIndex);
+            //    takeoverCandidate.takeOver(dest); 
 
-                //comm.TryCallNext(() => takeoverCandidate.takeOver(dest), candidateIndex);
-                //comm.takeOver(OperatorPosition.Next, candidateIndex, dest);
+            //    //comm.TryCallNext(() => takeoverCandidate.takeOver(dest), candidateIndex);
+            //    //comm.takeOver(OperatorPosition.Next, candidateIndex, dest);
 
-                //it's dangerous really 
-                send(t, candidateIndex); //might be dangerous
+            //    //it's dangerous really 
+            //    send(t, candidateIndex); //might be dangerous
 
-                return;
-            }
+            //    return;
+            //}
+
+            res = comm.input(OperatorPosition.Next, dest, t);
 
             if (res)
             {
@@ -730,13 +736,37 @@ namespace DADSTORM
 
         private void isAliveT()
         {
-            Thread.Sleep(5000);
+            Thread.Sleep(1500);
 
+            enforceState();
+            //log.debug("entered isalive");
             int toPing = takeOverCandidateIndex(rep_number);
             try
             {
-                comm.getOwnReplica(toPing).ping("i am number->" + rep_number+ " and you, are you alive?");
-            } catch (Exception e)
+                /*
+                log.debug("just entered try block");
+                ReplicaHolder target_repH = comm.getOwnReplicaHolder(toPing);
+                String target_address = target_repH.getReplica().address;
+                log.debug("my address is " + address + " - target address is: " + target_address);
+                if (target_address != address)
+                {
+                    log.debug("my address is " + address + " - target address is: " + target_address);
+                    comm.getOwnReplica(toPing).ping("i am number->" + rep_number + " and you, are you alive?");
+                }*/
+                //log.debug("my index: " + rep_number + " index to ping: " + toPing + " should i ping?" + (!indexes_owned.Contains(toPing)).ToString());
+                //log.debug("I AM THESE NODES:");
+                for(int i = 0; i < indexes_owned.Count(); i++)
+                {
+                    //log.debug("-->" + indexes_owned[i]);
+                }
+
+                if (!indexes_owned.Contains(toPing))
+                {
+                    //log.debug("about to call pingColleague");
+                    pingColleague(toPing);
+                }
+            }
+            catch (Exception e)
             {
                 log.writeLine("Replica->" + (rep_number + 1) % comm.getOwnReplicaCount() + " is dead!!! WARN THE OTHERS!");
 
@@ -765,7 +795,7 @@ namespace DADSTORM
 
         public void injectInput(Tuple t)
         {
-            input_buffer.TryAdd(t);
+            input_buffer.Add(t);
         }
     }
 }

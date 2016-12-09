@@ -343,6 +343,7 @@ namespace DADSTORM
             //Replica replica = connectToReplica(addr);
             this.representation = rr;
             this.r = null;
+            getReplica();
         }
 
         public ReplicaHolder(ReplicaHolder rh)
