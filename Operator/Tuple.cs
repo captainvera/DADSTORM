@@ -53,7 +53,7 @@ namespace DADSTORM
         {
             if(_id == null)
             {
-                Console.WriteLine("");
+                _id = new TupleId(generateId());
             }
             _id.op = op;
             _id.rep = rep;
@@ -87,7 +87,7 @@ namespace DADSTORM
             }
             else
             {
-                Console.WriteLine("[ERROR] Tried to initialize Tuple with incorrectly sized array");
+                Log.writeLine("[ERROR] Tried to initialize Tuple with incorrectly sized array", "TUPLE");
             }
         }
 

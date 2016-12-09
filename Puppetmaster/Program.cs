@@ -30,7 +30,7 @@ namespace DADSTORM
             ip = string.Concat("tcp://", ip, ":", port, "/pml");
             log.writeLine("Located at: " + ip);
 
-            Parser parser = new Parser(@"..\..\..\dadstorm_final.config");
+            Parser parser = new Parser(@"..\..\..\dadstorm.config");
             string[] commands =  parser.readCommands();
 
             Dictionary<string, OperatorDTO> operatorDTOs = parser.makeOperatorDTOs(ip);

@@ -36,8 +36,7 @@ namespace DADSTORM
             }
             else
             {
-                Console.WriteLine("NO\nO\nO\nO\nO\nO\nO\nO\nO\nO\nOOOO WTF RECEIVED DUPLICATE RECORD????");
-                Console.WriteLine("----->> DUP: " + tr.id.toString() + " & " + tr.state.ToString());
+                Log.writeLine("----->> DUP: " + tr.id.toString() + " & " + tr.state.ToString(),"SharedTable");
             }
         }
 

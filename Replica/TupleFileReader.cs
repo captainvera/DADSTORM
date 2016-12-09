@@ -72,9 +72,9 @@ namespace DADSTORM
 
                 if (str.Contains("\""))
                 {
-                    Console.WriteLine("String" + str + " contained \"");
+                    Log.debug("String" + str + " contained \"", "TFRWorker");
                     str = str.Replace("\"", "");
-                    Console.WriteLine("Result : " + str );
+                    Log.debug("Result : " + str, "TFRWorker");
                 } 
                 res.set(i, str);
                // Log.debug(str + " inserted at " + i, "TupleFileReader");

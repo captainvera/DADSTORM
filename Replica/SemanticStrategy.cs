@@ -38,7 +38,8 @@ namespace DADSTORM
             {
                 Log.debug("Detected exactly-once semantic strategy... Argument: " + strat, "RoutingStrategyFactory");
                 return new ExactlyOnce(r);
-            }else
+            }
+            else
             {
                 //Default?
                 return new AtMostOnce();
@@ -88,7 +89,7 @@ namespace DADSTORM
         {
             //No action on takeover necessary
         }
-        
+
         public Tuple get(string uid)
         {
             //No tuples stored, can't return anything
@@ -100,12 +101,12 @@ namespace DADSTORM
     class AtLeastOnce : ISemanticStrategy
     {
         //Shared state of processed tuples between replicas
-        SharedTupleTable shared_table;
+        protected SharedTupleTable shared_table;
 
         //Curent tuples in this replica
-        DeliveryTable delivery_table;
+        protected DeliveryTable delivery_table;
 
-        Replica rep;
+        protected Replica rep;
 
         public AtLeastOnce(Replica r)
         {
@@ -129,25 +130,25 @@ namespace DADSTORM
                 //Adds a tuple record on every replica's table
                 syncSharedTables(tr);
 
-                return true;
             }
-            return false;
+
+            return true;
         }
 
         //Current node's tuple is delivered
         // -Update every shared table (our's and other node's)
         // -Confirm node delivery to origin of Tuple (op n-1)
         // -Purge our local version
-        public void delivered(Tuple t, String init_op, int init_rep )
+        public void delivered(Tuple t, String init_op, int init_rep)
         {
             //Warn node of origin
-            if(t == null)
+            if (t == null)
             {
-                Console.WriteLine("!!!!!!ERROR!!!!! Delivered tuple doesn't exist?");
+                Log.info("!!!!!!ERROR!!!!! Delivered tuple doesn't exist?", "SemanticStrategy");
                 return;
             }
 
-            Console.WriteLine("Delivering confirmation to " + init_op + "->" + init_rep);
+            Log.debug("Delivering confirmation to " + init_op + "->" + init_rep, "SemanticStrategy");
 
             rep.getCommunicator().tupleConfirmed(OperatorPosition.Previous, init_rep, t.getId().getUID());
 
@@ -161,9 +162,9 @@ namespace DADSTORM
         public void firstDelivered(Tuple t)
         {
             //Warn node of origin
-            if(t == null)
+            if (t == null)
             {
-                Console.WriteLine("!!!!!!ERROR!!!!! Delivered tuple doesn't exist?");
+                Log.info("!!!!!!ERROR!!!!! Delivered tuple doesn't exist?", "SemanticStrategy");
                 return;
             }
 
@@ -183,7 +184,7 @@ namespace DADSTORM
         //Purge a TupleRecord by anothe replica of the same operator
         public void purgeRecord(TupleRecord tr)
         {
-            shared_table.remove(tr); 
+            shared_table.remove(tr);
         }
 
         //A certain tuple on hold is received on the n+2 op
@@ -196,7 +197,8 @@ namespace DADSTORM
         //add a node in a synchronized way
         public void syncSharedTables(TupleRecord tr)
         {
-            for (int i = 0; i < rep.getCommunicator().getOwnReplicaCount(); i++) {
+            for (int i = 0; i < rep.getCommunicator().getOwnReplicaCount(); i++)
+            {
                 if (!rep.getIndexesOwned().Contains(i))
                 {
                     Log.debug("Sending tuple record " + tr.getUID() + " to " + i, "SemanticStrategy");
@@ -208,13 +210,14 @@ namespace DADSTORM
         public void purgeSharedTables(string uid)
         {
             TupleRecord tr = shared_table.get(uid);
-            if(tr == null)
+            if (tr == null)
             {
                 Log.debug("!!!!!!ERROR!!!!! Trying to purge record that doesn't exist on node", "SemanticStrategy");
                 return;
             }
 
-            for (int i = 0; i < rep.getReplicationFactor(); i++) {
+            for (int i = 0; i < rep.getReplicationFactor(); i++)
+            {
                 if (!rep.getIndexesOwned().Contains(i))
                 {
                     rep.getCommunicator().purgeRecord(OperatorPosition.Own, i, tr);
@@ -228,14 +231,15 @@ namespace DADSTORM
             shared_table.printTable();
         }
 
-        public void fix(int n) {
+        public void fix(int n)
+        {
             List<TupleRecord> records = shared_table.toList();
 
             Log.writeLine("Fixing all unprocessed tuples from dead replica", "SemanticStrategy");
 
-            foreach(TupleRecord tr in records)
+            foreach (TupleRecord tr in records)
             {
-                if(tr.rep == n)
+                if (tr.rep == n)
                 {
                     resend(tr);
                 }
@@ -247,7 +251,7 @@ namespace DADSTORM
         {
             Tuple t = rep.getCommunicator().fetchTuple(OperatorPosition.Previous, tr.id.rep, tr);
 
-            if(t == null)
+            if (t == null)
             {
                 Log.debug("Trying to recover the unprocessed Tuple failed! Possible data loss...", "SemanticStrategy");
                 return;
@@ -258,7 +262,8 @@ namespace DADSTORM
             Log.debug("Injected Tuple for reprocessing", "SemanticStrategy");
         }
 
-        public Tuple get(string uid) {
+        public Tuple get(string uid)
+        {
             return delivery_table.get(uid);
         }
     }
@@ -267,6 +272,23 @@ namespace DADSTORM
     {
         public ExactlyOnce(Replica r) : base(r)
         {
+        }
+
+        public new bool accept(Tuple t)
+        {
+            if (!delivery_table.contains(t))
+            {
+                delivery_table.add(t);
+
+                TupleRecord tr = new TupleRecord(t.getId(), TupleState.pending, rep.getReplicaNumber());
+                shared_table.add(tr);
+
+                //Adds a tuple record on every replica's table
+                syncSharedTables(tr);
+
+                return true;
+            }
+            return false;
         }
     }
 }

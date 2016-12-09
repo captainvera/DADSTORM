@@ -199,37 +199,6 @@ namespace DADSTORM
             }
 
             log.writeLine("Now online but not processing");
-
-            //sem = new ExactlyOnce(this);
-
-            //Task.Factory.StartNew(() =>
-            //{
-            //    Console.WriteLine("STARTING TASK");
-            //    System.Threading.Thread.Sleep(5000);
-            //    Console.WriteLine("PINGING");
-
-            //    foreach (ReplicaRepresentation rr in dto.before_op)
-            //    {
-            //        Console.WriteLine("--------- PINGING" + "Hello from " + dto.op_id + " and " + rep_number);
-            //        Replica r = comm.getPreviousReplica(rr.rep);
-            //        r.ping(">>>>>>>>>>>>>>>>> Hello from " + dto.op_id + " and " + rep_number + " to " + rr.op + " | " + rr.rep);
-            //    }
-
-
-            //    Console.WriteLine("YOOOOOO MY REP FACTOR IS " + rep_factor);
-            //    for(int i = 0; i < rep_factor; i ++)
-            //    {
-            //        if (i != rep_number)
-            //        {
-            //            Replica r = comm.getOwnReplica(i);
-            //            Console.WriteLine("--------->>>>>> PINGING from " + rep_number + " to " + i);
-            //            r.ping(">>>>>>>>>>>>>>>>>>>> Hello from " + dto.op_id + " and " + rep_number);
-            //        }
-            //    }
-
-            //    Console.WriteLine("&&&&&&&&&&&&&&&&&&&& PRINTING TABLES MY FRIENDS!!");
-            //    sem.printTables();
-            //});
         }
 
         public void enforceState()
@@ -377,6 +346,7 @@ namespace DADSTORM
             enforceState();
 
             log.debug("taking over for rep: " + dead_rep_index);
+
             //fix previous operator's replica's "routing tables"
             log.debug("Fixing previous op's tables");
             for (int repN = 0; repN < getCommunicator().getPreviousReplicaCount(); repN++)
@@ -384,8 +354,6 @@ namespace DADSTORM
                 log.debug("Accessing prev rep: " + repN);
                 Replica prevRep = getCommunicator().getPreviousReplica(repN);
                 prevRep.subNext(dead_rep_index, rep_number);
-                //comm.TryCallNext(() => prevRep.subNext(dead_rep_index, rep_number), repN);
-                //comm.sub(OperatorPosition.Next, repN, dead_rep_index, rep_number);
             }
 
             //fix colleague replica's "routing tables"
@@ -396,8 +364,6 @@ namespace DADSTORM
                     log.debug("Accessing colleague rep: " + repN + " and pointing to me: " + rep_number);
                     Replica colleagueReplica = comm.getOwnReplica(repN);
                     colleagueReplica.subOwn(dead_rep_index, rep_number);
-                    //comm.TryCallOwn( () => colleagueReplica.subOwn(dead_rep_index, rep_number), repN);
-                    //comm.sub(OperatorPosition.Own, repN, dead_rep_index, rep_number);
                 }  
             }
 
@@ -407,8 +373,6 @@ namespace DADSTORM
                 log.debug("Accessing next rep: " + repN);
                 Replica nextRep = comm.getNextReplica(repN);
                 nextRep.subPrev(dead_rep_index, rep_number);
-                //comm.TryCallPrev(() => nextRep.subPrev(dead_rep_index, rep_number), repN);
-                //comm.sub(OperatorPosition.Previous, repN, dead_rep_index, rep_number);
             }
 
             //Now solve all missing tuples if necessary
@@ -435,11 +399,10 @@ namespace DADSTORM
                 {
                     Replica prevRep = comm.getPreviousReplica(repN);
                     prevRep.reinstateNext(rep);
-                    //comm.reinstate(OperatorPosition.Previous, repN, rep);
                 }
                 catch(Exception e)
                 {
-                    Console.WriteLine("failed to reinstate prev rep of index: " + repN + "  caught exception: " + e);
+                    log.debug("failed to reinstate prev rep of index: " + repN + "  caught exception: " + e);
                 }
             }
             //fix colleague replica's "routing tables"
@@ -450,8 +413,6 @@ namespace DADSTORM
                 {
                     Replica colleagueRep = comm.getOwnReplica(repN);
                     colleagueRep.reinstateOwn(rep);
-                    //comm.TryCallOwn(()=>colleagueRep.reinstateOwn(rep), repN);
-                    //comm.reinstate(OperatorPosition.Own, repN, rep);
                 }
             }
 
@@ -460,7 +421,6 @@ namespace DADSTORM
             for (int repN = 0; repN < comm.getNextReplicaCount(); repN++)
             {
                 Replica nextRep = comm.getNextReplica(repN);
-                //comm.TryCallNext(()=>nextRep.reinstatePrev(rep), repN);
                 nextRep.reinstatePrev(rep);
             }
         }
@@ -496,36 +456,7 @@ namespace DADSTORM
 
             t.update(op_id, rep_number);
 
-            //Replica next = (Replica)Activator.GetObject(typeof(Replica), dest);
-            //Replica next = comm.getNextReplica(dest);
-
-            //if(next == null)
-            //{
-            //    Console.WriteLine("F\nF\nF\nF\nF\nF\nF\nF\nF\nF\nFUUUUUUUUUUUUUUCK. I was trying to send to " + dest + " but failed in getting the object");
-            //}
-
             bool res = false;
-
-            //try
-            //{
-            //    res = next.input(t);
-            //}
-            //catch (Exception e)//TODO failed to connect exception
-            //{
-            //    log.debug("Exception when sending tuple: " + e);
-
-            //    int candidateIndex = takeOverNextCandidateIndex(dest);
-            //    Replica takeoverCandidate = comm.getNextReplica(candidateIndex);
-            //    takeoverCandidate.takeOver(dest); 
-
-            //    //comm.TryCallNext(() => takeoverCandidate.takeOver(dest), candidateIndex);
-            //    //comm.takeOver(OperatorPosition.Next, candidateIndex, dest);
-
-            //    //it's dangerous really 
-            //    send(t, candidateIndex); //might be dangerous
-
-            //    return;
-            //}
 
             res = comm.input(OperatorPosition.Next, dest, t);
 
@@ -572,9 +503,6 @@ namespace DADSTORM
         {
             frozen = true;
             log.info("Received freeze command");
-            //Is this necessary?
-            //How can we receive unfreeze if we disconnect the remote object?
-            //RemotingServices.Disconnect(this);
 
             // Freezes all current processing
             op_pool.freezeAll();
@@ -584,8 +512,6 @@ namespace DADSTORM
         {
             frozen = false;
             log.info("Received unfreeze command");
-            //Is this necessary?
-            //RemotingServices.Connect(typeof(Replica), "op", this);
 
             // Unfreezes all current processing
             op_pool.unfreezeAll();
@@ -621,7 +547,6 @@ namespace DADSTORM
             System.Environment.Exit(1);
         }
 
-        //TODO::XXX::FIXME -> check if frozen 
         public void status()
         {
             log.info("Received status command");
@@ -650,7 +575,7 @@ namespace DADSTORM
         {
             enforceState();
 
-            Console.WriteLine("------->Received tuple record: id:" + tr.getUID() + " | from " + tr.id.op + "->" + tr.id.rep);
+            log.debug("------->Received tuple record: id:" + tr.getUID() + " | from " + tr.id.op + "->" + tr.id.rep);
             sem.addRecord(tr);
 
             return true;
@@ -660,7 +585,7 @@ namespace DADSTORM
         {
             enforceState();
 
-            Console.WriteLine("------>Received purge record notice id:" + tr.getUID() + " | from " + tr.id.op + "->" + tr.id.rep);
+            log.debug("------>Received purge record notice id:" + tr.getUID() + " | from " + tr.id.op + "->" + tr.id.rep);
             sem.purgeRecord(tr);
 
             return true;
@@ -669,7 +594,7 @@ namespace DADSTORM
         {
             enforceState();
 
-            Console.WriteLine("------Got confirmation for delivery of " + uid);
+            log.debug("------Got confirmation for delivery of " + uid);
             sem.tupleConfirmed(uid);
             return true;
         }
@@ -685,57 +610,6 @@ namespace DADSTORM
         public void pingColleague(int ping_target)
         {
             comm.getOwnReplica(ping_target).ping("i am number->" + rep_number + " and you, are you alive?");
-            /*
-            ReplicaHolder target_repH = comm.getOwnReplicaHolder(ping_target);
-            String target_address = target_repH.getReplica().address;
-            log.debug("my address is " + address + " - target address is: " + target_address);
-            if (target_address != address)
-            {
-                log.debug("my address is " + address + " - target address is: " + target_address);
-                comm.getOwnReplica(ping_target).ping("i am number->" + rep_number + " and you, are you alive?");
-            }*/
-
-        }
-
-        //wtf, argument?
-        private void isAlive(Object obj)
-        {
-            enforceState();
-            log.debug("entered isalive");
-            int toPing = takeOverCandidateIndex(rep_number);
-            try
-            {
-                /*
-                log.debug("just entered try block");
-                ReplicaHolder target_repH = comm.getOwnReplicaHolder(toPing);
-                String target_address = target_repH.getReplica().address;
-                log.debug("my address is " + address + " - target address is: " + target_address);
-                if (target_address != address)
-                {
-                    log.debug("my address is " + address + " - target address is: " + target_address);
-                    comm.getOwnReplica(toPing).ping("i am number->" + rep_number + " and you, are you alive?");
-                }*/
-                log.debug("my index: " + rep_number + " index to ping: " + toPing + " should i ping?" + (!indexes_owned.Contains(toPing)).ToString());
-                log.debug("I AM THESE NODES:");
-                for(int i = 0; i < indexes_owned.Count(); i++)
-                {
-                    log.debug("-->" + indexes_owned[i]);
-                }
-
-                if (!indexes_owned.Contains(toPing))
-                {
-                    log.debug("about to call pingColleague");
-                    pingColleague(toPing);
-                }
-            }
-            catch (Exception e)
-            {
-                log.writeLine("Replica->" + (rep_number + 1) % comm.getOwnReplicaCount() + " is dead!!! WARN THE OTHERS!");
-
-                startTakeover(toPing);
-
-                log.writeLine("Done taking over");
-            }
         }
 
         private void isAliveT()
@@ -747,30 +621,12 @@ namespace DADSTORM
             {
                 Thread.Sleep(7500);
             }
-            //log.debug("entered isalive");
+
             int toPing = takeOverCandidateIndex(rep_number);
             try
             {
-                /*
-                log.debug("just entered try block");
-                ReplicaHolder target_repH = comm.getOwnReplicaHolder(toPing);
-                String target_address = target_repH.getReplica().address;
-                log.debug("my address is " + address + " - target address is: " + target_address);
-                if (target_address != address)
-                {
-                    log.debug("my address is " + address + " - target address is: " + target_address);
-                    comm.getOwnReplica(toPing).ping("i am number->" + rep_number + " and you, are you alive?");
-                }*/
-                //log.debug("my index: " + rep_number + " index to ping: " + toPing + " should i ping?" + (!indexes_owned.Contains(toPing)).ToString());
-                //log.debug("I AM THESE NODES:");
-                for(int i = 0; i < indexes_owned.Count(); i++)
-                {
-                    //log.debug("-->" + indexes_owned[i]);
-                }
-
                 if (!indexes_owned.Contains(toPing))
                 {
-                    //log.debug("about to call pingColleague");
                     pingColleague(toPing);
                 }
             }
@@ -800,8 +656,6 @@ namespace DADSTORM
             {
                 takeOver(rep);
             }
-            //comm.TryCallOwn(()=>r.takeOver(rep), next);
-            //comm.takeOver(OperatorPosition.Next, next, rep);
         }
 
         public Tuple fetchTuple(TupleRecord tr)
