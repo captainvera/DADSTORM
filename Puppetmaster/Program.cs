@@ -178,6 +178,30 @@ namespace DADSTORM
             }
         }
 
+        public void printTables()
+        {
+            logger.info("Calling print tables...");
+            foreach (KeyValuePair<string, OperatorDTO> entry in operatorDTOs)
+            {
+                for (int i = 0; i < entry.Value.address.Count; i++)
+                {
+                    try
+                    {
+                         logger.debug("Calling print tables of " + entry.Value.op_id + "." + i);
+                         Replica replica = getReplica(entry.Value.address[i]); ;
+                         VoidAsyncDelegate statusDel = new VoidAsyncDelegate(replica.printTables);
+                         IAsyncResult remAr = statusDel.BeginInvoke(null, null); 
+                    }
+                    catch (System.Net.Sockets.SocketException e)
+                    {
+                        logger.writeLine("Replica " + i + " of " + entry.Value.op_id + " is unreachable.");
+                    }
+
+                }
+            }
+
+        }
+
         public void wait(int time)
         {
             logger.writeLine("wait " + time);
@@ -199,7 +223,6 @@ namespace DADSTORM
                     }
                     catch (System.Net.Sockets.SocketException e)
                     {
-                        //TODO apanhar excepçoes especificas
                         logger.writeLine("Replica " + i + " of " + entry.Value.op_id + " is unreachable.");
                     }
 
