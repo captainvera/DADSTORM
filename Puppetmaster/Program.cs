@@ -30,7 +30,7 @@ namespace DADSTORM
             ip = string.Concat("tcp://", ip, ":", port, "/pml");
             log.writeLine("Located at: " + ip);
 
-            Parser parser = new Parser(@"..\..\..\dadstorm.config");
+            Parser parser = new Parser(@"..\..\..\dadstorm_final.config");
             string[] commands =  parser.readCommands();
 
             Dictionary<string, OperatorDTO> operatorDTOs = parser.makeOperatorDTOs(ip);
@@ -91,7 +91,7 @@ namespace DADSTORM
             logger.writeLine("Creating operator " + op.op_id);
             for(int i=0; i<op.address.Count; i++)
             {
-                Console.WriteLine("-------- " + op.address[i]);
+                logger.debug(op.address[i]);
                 string PCSaddress = Parser.parseIPFromAddress(op.address[i]) + ":10000/pcs";
                 op.curr_rep = i;
                 createReplica(PCSaddress, op);

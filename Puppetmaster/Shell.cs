@@ -38,7 +38,19 @@ namespace DADSTORM
         {
             foreach(string cmd in commands)
             {
-                processCommand(cmd);
+                string str = Console.ReadLine();
+                Console.WriteLine("RECEIVED ------------>" + str);
+                switch (str)
+                {
+                    case "next":
+                        Console.WriteLine("PROCESSING------->" + cmd);
+                        processCommand(cmd);
+                        break;
+                    case "all":
+                        processCommandList(commands);
+                        start();
+                        break;
+                }
             }
 
             start();
@@ -88,7 +100,7 @@ namespace DADSTORM
 
         public void print(string txt)
         {
-            Console.WriteLine(txt);
+            Console.WriteLine("Console", txt);
         }
 
         public void startOP(string str)

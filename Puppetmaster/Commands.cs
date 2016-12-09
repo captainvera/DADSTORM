@@ -41,7 +41,7 @@ namespace DADSTORM
         {
             if (list.Length > 1)
             {
-                Console.WriteLine( getID() + " command does not take any arguments");
+                print(getID() + " command does not take any arguments");
             } else print("Puppermaster shell help.\nAvailable commands:\nstart\ninterval\nstatus\nwait\ncrash\nfreeze\nunfreeze\nreadfile");
         }
     }
@@ -54,7 +54,7 @@ namespace DADSTORM
         {
             if (list.Length != 2)
             {
-                Console.WriteLine("[Usage]" + getID() + " operator_id");
+                print("[Usage]" + getID() + " operator_id");
             }
             else Shell().startOP(list[1]);
         }
@@ -68,13 +68,13 @@ namespace DADSTORM
         {
             if (list.Length != 3)
             {
-                Console.WriteLine("[Usage]" + getID() + " operator_id x_ms");
+                 print("[Usage]" + getID() + " operator_id x_ms");
             }
             else {
                 int time = 0;
                 if (Int32.TryParse(list[2], out time) == true)
                     Shell().interval(list[1], time);
-                else Console.WriteLine("[Usage] " + list[2] + " must be an integer");
+                else print("[Usage] " + list[2] + " must be an integer");
             }
         }
     }
@@ -87,7 +87,7 @@ namespace DADSTORM
         {
             if (list.Length != 1)
             {
-                Console.WriteLine("[Usage]" + getID() + " command has no arguments");
+                print("[Usage]" + getID() + " command has no arguments");
             }
             else Shell().status();
         }
@@ -101,13 +101,13 @@ namespace DADSTORM
         {
             if (list.Length != 3)   
             {
-                Console.WriteLine("[Usage]" + getID() + " OperatorID ReplicaID");
+                print("[Usage]" + getID() + " OperatorID ReplicaID");
             }
             else {
                 int replica_id = 0;
                 if (Int32.TryParse(list[2], out replica_id) == true)
                     Shell().crash(list[1], replica_id);
-                else Console.WriteLine("[Usage] " + list[2] + " must be an integer");
+                else print("[Usage] " + list[2] + " must be an integer");
             }
         }
     }
@@ -120,13 +120,13 @@ namespace DADSTORM
         {
             if (list.Length != 3)
             {
-                Console.WriteLine("[Usage]" + getID() + " OperatorID ReplicaID");
+                print("[Usage]" + getID() + " OperatorID ReplicaID");
             }
             else {
                 int replica_id = 0;
                 if (Int32.TryParse(list[2], out replica_id) == true)
                     Shell().freeze(list[1], replica_id);
-                else Console.WriteLine("[Usage] " + list[2] + " must be an integer");
+                else print("[Usage] " + list[2] + " must be an integer");
             }
         }
     }
@@ -139,14 +139,14 @@ namespace DADSTORM
         {
             if (list.Length != 3)
             {
-                Console.WriteLine("[Usage]" + getID() + " OperatorID ReplicaID");
+                print("[Usage]" + getID() + " OperatorID ReplicaID");
             }
             else
             {
                 int replica_id = 0;
                 if (Int32.TryParse(list[2], out replica_id) == true)
                     Shell().unfreeze(list[1], replica_id);
-                else Console.WriteLine("[Usage] " + list[2] + " must be an integer");
+                else print("[Usage] " + list[2] + " must be an integer");
             }
         }
     }
@@ -159,7 +159,7 @@ namespace DADSTORM
         {
             if (list.Length != 1)
             {
-                Console.WriteLine("[Usage]" + getID() + " takes no arguments");
+                print("[Usage]" + getID() + " takes no arguments");
             }
             else Shell().exit();
         }
@@ -173,13 +173,13 @@ namespace DADSTORM
         {
             if (list.Length != 2)
             {
-                Console.WriteLine("[Usage]" + getID() + " x_ms");
+                print("[Usage]" + getID() + " x_ms");
             }
             else {
                 int time = 0;
                 if (Int32.TryParse(list[1], out time) == true)
                     Shell().wait(time);
-                else Console.WriteLine("[Usage] " + list[1] +" must be an integer");
+                else print("[Usage] " + list[1] +" must be an integer");
             }
         }
     }
@@ -192,13 +192,13 @@ namespace DADSTORM
         {
             if (list.Length != 3)
             {
-                Console.WriteLine("[Usage]" + getID() + " file");
+                print("[Usage]" + getID() + " file");
             }
             else {
                 int replica_id = 0;
                 if (Int32.TryParse(list[2], out replica_id) == true)
                     Shell().readFile(list[1], replica_id);
-                else Console.WriteLine("[Usage] " + list[2] + " must be an integer");
+                else print("[Usage] " + list[2] + " must be an integer");
             }
         }
     }
