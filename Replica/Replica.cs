@@ -81,6 +81,7 @@ namespace DADSTORM
         private List<ReplicaRepresentation> input_ops;
         private int rep_number;
         private int rep_factor;
+        private List<int> indexes_owned = new List<int>();
 
         /** ------------------- Multithreading ---------------------------- **/
 
@@ -117,6 +118,7 @@ namespace DADSTORM
 
         public Replica(OperatorDTO dto)
         {
+
             //Replica configuration
             primary = false;
             running = false;
@@ -128,6 +130,7 @@ namespace DADSTORM
             op_id = dto.op_id;
             rep_number = dto.curr_rep;
             port = dto.ports[dto.curr_rep];
+            indexes_owned.Add(rep_number);
 
             //output = dto.next_op_addresses.ToArray();
 
@@ -323,6 +326,11 @@ namespace DADSTORM
 
         public void reinstateOwn(ReplicaRepresentation rep)
         {
+            if (indexes_owned.Contains(rep.rep))
+            {
+                indexes_owned.Remove(rep.rep);
+            }
+
             ReplicaHolder repH = new ReplicaHolder(rep);
             enforceState();
             log.debug("reinstating own to index " + repH.representation.rep);
@@ -341,6 +349,10 @@ namespace DADSTORM
 
         public void takeOver(int dead_rep_index)
         {
+
+            log.debug("Adding " + dead_rep_index + " to indexes owned.");
+            indexes_owned.Add(dead_rep_index);
+
             enforceState();
 
             log.debug("taking over for rep: " + dead_rep_index);
@@ -621,14 +633,54 @@ namespace DADSTORM
             return new ReplicaRepresentation(op_id, rep_number, address);
         }
 
+        
+        public void pingColleague(int ping_target)
+        {
+            comm.getOwnReplica(ping_target).ping("i am number->" + rep_number + " and you, are you alive?");
+            /*
+            ReplicaHolder target_repH = comm.getOwnReplicaHolder(ping_target);
+            String target_address = target_repH.getReplica().address;
+            log.debug("my address is " + address + " - target address is: " + target_address);
+            if (target_address != address)
+            {
+                log.debug("my address is " + address + " - target address is: " + target_address);
+                comm.getOwnReplica(ping_target).ping("i am number->" + rep_number + " and you, are you alive?");
+            }*/
+
+        }
+
         //wtf, argument?
         private void isAlive(Object obj)
         {
+            enforceState();
+            log.debug("entered isalive");
             int toPing = takeOverCandidateIndex(rep_number);
             try
             {
-                comm.getOwnReplica(toPing).ping("i am number->" + rep_number+ " and you, are you alive?");
-            } catch (Exception e)
+                /*
+                log.debug("just entered try block");
+                ReplicaHolder target_repH = comm.getOwnReplicaHolder(toPing);
+                String target_address = target_repH.getReplica().address;
+                log.debug("my address is " + address + " - target address is: " + target_address);
+                if (target_address != address)
+                {
+                    log.debug("my address is " + address + " - target address is: " + target_address);
+                    comm.getOwnReplica(toPing).ping("i am number->" + rep_number + " and you, are you alive?");
+                }*/
+                log.debug("my index: " + rep_number + " index to ping: " + toPing + " should i ping?" + (!indexes_owned.Contains(toPing)).ToString());
+                log.debug("I AM THESE NODES:");
+                for(int i = 0; i < indexes_owned.Count(); i++)
+                {
+                    log.debug("-->" + indexes_owned[i]);
+                }
+
+                if (!indexes_owned.Contains(toPing))
+                {
+                    log.debug("about to call pingColleague");
+                    pingColleague(toPing);
+                }
+            }
+            catch (Exception e)
             {
                 log.writeLine("Replica->" + (rep_number + 1) % comm.getOwnReplicaCount() + " is dead!!! WARN THE OTHERS!");
 
