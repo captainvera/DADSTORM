@@ -38,7 +38,9 @@ namespace DADSTORM
             //We always want to print everything we receive on the Puppetmaster
             //Each replica decides if they send or not the info depending on logging level
             //Config is local to each proccess 
-            Config.setLoggingLevel("full");
+
+            Config.setLoggingLevel(operatorDTOs["OP1"].logging);
+
             PuppetmasterListener pml = new PuppetmasterListener(log);
             
             TcpChannel channel = new TcpChannel(port);

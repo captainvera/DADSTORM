@@ -75,6 +75,7 @@ namespace DADSTORM
         private Boolean running;
         private Boolean frozen;
         private Boolean interval_active;
+        private Boolean wait_takeover;
         private int interval_time;
         private string op_id, port, replication, routing, address, logging, semantics;
         private string[] output, op_spec;
@@ -126,6 +127,7 @@ namespace DADSTORM
             running = false;
             frozen = false;
             interval_active = false;
+            wait_takeover = false;
             interval_time = 0;
 
             //Some parameteres are unnecessary, remove later
@@ -146,7 +148,7 @@ namespace DADSTORM
             rep_factor = Int32.Parse(dto.rep_fact);
 
             //Setting global logging level for this process
-            Config.setLoggingLevel("debug");
+            Config.setLoggingLevel(logging);
             log = new RemoteLogger("Replica" + op_id + "-" + rep_number.ToString(), dto.pmAdress);
 
 
@@ -163,7 +165,7 @@ namespace DADSTORM
 
             log.info("Creating operator");
             //Operator to be used
-            op = OperatorFactory.create(dto.op_spec[0], dto.op_spec.GetRange(1, dto.op_spec.Count - 1).ToArray());
+            op = OperatorFactory.create(dto.op_spec[0], dto.op_spec.GetRange(1, dto.op_spec.Count - 1).ToArray(), getRepresentation());
 
             log.info("Creating semantic strategy");
             //Semantic Strategy to be used
@@ -256,7 +258,7 @@ namespace DADSTORM
             Tuple data;
             while (true)
             {
-                log.debug("Outputting next tuple:");
+                log.debug("Waiting for next tuple...");
 
                 data = output_buffer.Take();
 
@@ -738,9 +740,13 @@ namespace DADSTORM
 
         private void isAliveT()
         {
-            Thread.Sleep(1500);
-
             enforceState();
+
+            Thread.Sleep(1500);
+            if (wait_takeover)
+            {
+                Thread.Sleep(7500);
+            }
             //log.debug("entered isalive");
             int toPing = takeOverCandidateIndex(rep_number);
             try
@@ -772,6 +778,7 @@ namespace DADSTORM
             {
                 log.writeLine("Replica->" + (rep_number + 1) % comm.getOwnReplicaCount() + " is dead!!! WARN THE OTHERS!");
 
+                wait_takeover = true;
                 startTakeover(toPing);
 
                 log.writeLine("Done taking over");
@@ -784,8 +791,15 @@ namespace DADSTORM
         {
             int next = takeOverCandidateIndex(rep);
 
-            Replica r = comm.getOwnReplica(next);
-            r.takeOver(rep);
+            log.writeLine("Trying to start takeOver of " + rep + " in replica " + next);
+            if (!indexes_owned.Contains(next))
+            {
+                Replica r = comm.getOwnReplica(next);
+                r.takeOver(rep);
+            }else
+            {
+                takeOver(rep);
+            }
             //comm.TryCallOwn(()=>r.takeOver(rep), next);
             //comm.takeOver(OperatorPosition.Next, next, rep);
         }

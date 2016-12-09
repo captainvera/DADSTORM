@@ -170,8 +170,9 @@ namespace DADSTORM
 
         public void process()
         {
-            Tuple res = null;
+            //Tuple res = null;
 
+            List<Tuple> res = null;
             //Generate a token to cancel blocking operation if necessary
             _source = new CancellationTokenSource();
             _cancelToken = _source.Token;
@@ -181,13 +182,17 @@ namespace DADSTORM
             {
                 foreach (var data in _in.GetConsumingEnumerable(_cancelToken))
                 {
+                    //res = _op.process(data);
                     res = _op.process(data);
+
                     if (res != null)
                     {
-                        Log.debug(res.toString(), "Thread" + Thread.CurrentThread.ManagedThreadId);
+                        foreach(Tuple t in res)
+                        {
+                            Log.debug(t.toString(), "Thread" + Thread.CurrentThread.ManagedThreadId);
 
-                        _out.Add(res);
-                        res = null;
+                            _out.Add(t);
+                        }
                     }
                     else
                     {
@@ -196,6 +201,8 @@ namespace DADSTORM
                         t.setId(data.getId());
                         _out.Add(t);
                     }
+
+                    res = null;
                 }
             }
             catch (OperationCanceledException e)
@@ -203,8 +210,11 @@ namespace DADSTORM
                 Log.info("Operation cancelled. Checking if there is data to restore.", "Thread" + Thread.CurrentThread.ManagedThreadId);
                 if (res != null)
                 {
-                    Log.writeLine("Tuple restored to input buffer", "Thread" + Thread.CurrentThread.ManagedThreadId);
-                    _out.Add(res);
+                    foreach (Tuple t in res)
+                    {
+                        Log.writeLine("Tuple restored to input buffer", "Thread" + Thread.CurrentThread.ManagedThreadId);
+                        _in.Add(t);
+                    }
                 }
             }
 

@@ -12,7 +12,7 @@ namespace DADSTORM
 {
     public class OperatorFactory
     {
-        static public IOperator create(string opname, string[] args)
+        static public IOperator create(string opname, string[] args, ReplicaRepresentation rr)
         {
             int field = 0;
             switch (opname)
@@ -37,7 +37,7 @@ namespace DADSTORM
                 case "CUSTOM":
                     Log.writeLine("CUSTOM operator started.", "OperatorSelector");
                     if (args.Length == 3)
-                        return new CUSTOM(args[0], args[1], args[2]);
+                        return new CUSTOM(args[0], args[1], args[2], rr);
                     else
                     {
                         Log.writeLine("ERROR: CUSTOM operator could not be instanced, wrong arguments.", "OperatorSelector");
@@ -71,7 +71,7 @@ namespace DADSTORM
 
     public interface IOperator
     {
-        Tuple process(Tuple t);
+        List<Tuple> process(Tuple t);
         IList<IList<string>> CustomOperation(IList<string> l);
     }
 
@@ -79,7 +79,7 @@ namespace DADSTORM
     {
         private int _countNumber = 0;
 
-        public Tuple process(Tuple t)
+        public List<Tuple> process(Tuple t)
         {
             _countNumber++;
 
@@ -88,7 +88,10 @@ namespace DADSTORM
 
             res.setId(t.getId());
 
-            return res;
+            List<Tuple> result = new List<Tuple>();
+            result.Add(res);
+
+            return  result;
         }
 
         public int get()
@@ -107,15 +110,17 @@ namespace DADSTORM
         private MethodInfo _method;
         private Type _type;
         private object _instance;
+        private ReplicaRepresentation _rr;
 
         public IList<IList<string>> CustomOperation(IList<string> l)
         {
             return new List<IList<string>>();
 
         }
-        public CUSTOM(string dll, string classLoad, string method)
+        public CUSTOM(string dll, string classLoad, string method, ReplicaRepresentation rr)
         {
             Log.writeLine("Trying to load dll {0} , class {1} and method {2}", "CustomOPERATOR", dll, classLoad, method);
+            _rr = rr;
 
             byte[] bytes = System.IO.File.ReadAllBytes(@".\" + dll);
             Assembly assembly = Assembly.Load(bytes);
@@ -157,7 +162,7 @@ namespace DADSTORM
             _instance = Activator.CreateInstance(_type);
         }
 
-        public Tuple process(Tuple t)
+        public List<Tuple> process(Tuple t)
         {
             List<string> listargs = t.toArray().ToList<string>();
 
@@ -168,6 +173,8 @@ namespace DADSTORM
 
             //Only here for multi threading support in certain operator operations
             //like file reading
+            List<Tuple> res = new List<Tuple>();
+
             while (tries < 10)
             {
                 try
@@ -175,28 +182,24 @@ namespace DADSTORM
                     result = _method.Invoke(_instance, args);
                     IList<IList<string>> lists = (IList<IList<string>>)result;
 
-                    //TODO::XXX::Make tuples great again! (send all received tuples, not just list[0])
                     foreach(List<string> list in lists)
                     {
                         Tuple tup = new Tuple(list.ToArray());
+
+                        tup.stamp(_rr);
+
+                        res.Add(tup);
                     }
-
-                    Tuple ret = new Tuple(lists[0].ToArray<string>());
-                    Log.debug("Success with {0} tries", "CustomOperator.process()", tries + 1);
-
-                    ret.setId(t.getId());
-
-                    return ret;
                 }
                 catch (Exception e)
                 {
-                    Log.debug("CAUGHT EXCEPTION AT INVOCATION: " + e.Message, "CustomOperator.process()");
+                    Log.debug("CAUGHT EXCEPTION AT INVOCATION: " + e.Message + "\n" + e.StackTrace, "CustomOperator.process()");
                 }
                 tries++;
                 Log.debug("Failed method invocation at try {0}, retrying...", "CustomOperator.process()", tries);
             }
 
-            return null;
+            return res;
         }
 
     }
@@ -212,11 +215,13 @@ namespace DADSTORM
         {
         }
 
-        public Tuple process(Tuple t)
+        public List<Tuple> process(Tuple t)
         {
             Tuple ret = new Tuple(t);
+            List<Tuple> res = new List<Tuple>();
+            res.Add(ret);
 
-            return ret;
+            return res;
         }
     }
 
@@ -259,7 +264,7 @@ namespace DADSTORM
 
         }
 
-        public Tuple process(Tuple t)
+        public List<Tuple> process(Tuple t)
         {
             if (_fieldNumber > t.getSize() - 1)
             {
@@ -268,7 +273,9 @@ namespace DADSTORM
                 //Maybe use exception??
             }
 
-            Console.WriteLine("TEST: " + t.get(_fieldNumber) + " VS " + _stringValue);
+            List<Tuple> res = new List<Tuple>();
+
+            Log.debug("TEST: " + t.get(_fieldNumber) + " VS " + _stringValue, "FILTER");
             if (_isnumber)
             {
                 double tupleValue;
@@ -279,20 +286,24 @@ namespace DADSTORM
                 {
                     case "=":
                         if (tupleValue == _doubleValue)
-                            return t;
+                            res.Add(t);
+                            return res;
                         break;
                     case ">":
                         if (_doubleValue > tupleValue)
-                            return t;
+                            res.Add(t);
+                            return res;
                         break;
                     case "<":
                         if (_doubleValue < tupleValue)
-                            return t;
+                            res.Add(t);
+                            return res;
                         break;
                 }
             }
             else if (t.get(_fieldNumber) == _stringValue)
-                return t;
+                res.Add(t);
+                return res;
 
             return null;
         }
@@ -317,7 +328,7 @@ namespace DADSTORM
 
         }
 
-        public Tuple process(Tuple t)
+        public List<Tuple> process(Tuple t)
         {
 
             if (_fieldNumber > t.getSize() - 1)
@@ -333,7 +344,10 @@ namespace DADSTORM
 
             _sorted.Add(val, val);
 
-            return t;
+            List<Tuple> res = new List<Tuple>();
+            res.Add(t);
+
+            return res;
         }
     }
 }
