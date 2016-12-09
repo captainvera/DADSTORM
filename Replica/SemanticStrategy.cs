@@ -16,6 +16,8 @@ namespace DADSTORM
         void purgeRecord(TupleRecord tr);
         void tupleConfirmed(string uid);
         void printTables();
+        void fix(int n);
+        Tuple get(string uid);
     }
 
     class SemanticStrategy : ISemanticStrategy
@@ -51,6 +53,9 @@ namespace DADSTORM
         public void printTables()
         {
         }
+
+        public void fix(int n) { }
+        public Tuple get(string uid) { return null; }
     }
 
     class AtMostOnce : ISemanticStrategy
@@ -86,6 +91,9 @@ namespace DADSTORM
         public void printTables()
         {
         }
+
+        public void fix(int n) { }
+        public Tuple get(string uid) { return null; }
     }
 
     class AtLeastOnce : ISemanticStrategy
@@ -121,6 +129,9 @@ namespace DADSTORM
         public void printTables()
         {
         }
+
+        public void fix(int n) { }
+        public Tuple get(string uid) { return null; }
     }
 
     class ExactlyOnce : ISemanticStrategy
@@ -149,7 +160,7 @@ namespace DADSTORM
             {
                 delivery_table.add(t);
 
-                TupleRecord tr = new TupleRecord(t.getId(), TupleState.pending);
+                TupleRecord tr = new TupleRecord(t.getId(), TupleState.pending, rep.getReplicaNumber());
                 shared_table.add(tr);
 
                 //Adds a tuple record on every replica's table
@@ -261,5 +272,32 @@ namespace DADSTORM
             delivery_table.printTable();
             shared_table.printTable();
         }
+
+        public void fix(int n) {
+            List<TupleRecord> records = shared_table.toList();
+            foreach(TupleRecord tr in records)
+            {
+                if(tr.rep == n)
+                {
+                    resend(tr);
+                }
+            }
+        }
+        private void resend(TupleRecord tr)
+        {
+            Replica r = rep.getCommunicator().getPreviousReplica(tr.id.rep);
+            Tuple t = rep.fetchTuple(tr);
+
+            if(t == null)
+            {
+                Log.writeLine("Trying to recover the unprocessed Tuple failed! Possible data los...", "SemanticStrategy");
+                return;
+            }
+
+            Log.writeLine("Fetched Tuple from previous server successfuly!", "SemanticStrategy");
+            rep.injectInput(t);
+            Log.writeLine("Injected Tuple for reprocessing", "SemanticStrategy");
+        }
+        public Tuple get(string uid) { return delivery_table.get(uid); }
     }
 }

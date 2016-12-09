@@ -365,6 +365,9 @@ namespace DADSTORM
                 Replica nextRep = comm.getNextReplica(repN);
                 nextRep.subPrev(dead_rep_index, rep_number);
             }
+
+            //Now solve all missing tuples if necessary
+            sem.fix(dead_rep_index);
         }
 
         //reinstates replica's place when coming back from the dead
@@ -623,6 +626,16 @@ namespace DADSTORM
         {
                 int next = takeOverCandidateIndex(rep);
                 comm.getOwnReplica(next).takeOver(rep);
+        }
+
+        public Tuple fetchTuple(TupleRecord tr)
+        {
+            return sem.get(tr.getUID());
+        }
+
+        public void injectInput(Tuple t)
+        {
+            input_buffer.TryAdd(t);
         }
     }
 }

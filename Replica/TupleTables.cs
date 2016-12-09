@@ -21,9 +21,9 @@ namespace DADSTORM
             return table.ContainsKey(uuid);
         }
 
-        public void add(Tuple t, TupleState ts)
+        public void add(Tuple t, TupleState ts, int rep)
         {
-            TupleRecord tr = new TupleRecord(t.getId(), ts);
+            TupleRecord tr = new TupleRecord(t.getId(), ts, rep);
 
             add(tr);
         }
@@ -80,6 +80,11 @@ namespace DADSTORM
             {
                 Console.WriteLine(entry.Key + " | " + entry.Value.id.op + " | " + entry.Value.id.rep + " | " +entry.Value.state.ToString());
             }
+        }
+
+        public List<TupleRecord> toList()
+        {
+            return table.Values.ToList();
         }
     }
 
@@ -141,16 +146,23 @@ namespace DADSTORM
     {
         public TupleId id;
         public TupleState state;
+        public int rep;
 
-        public TupleRecord(TupleId id, TupleState state)
+        public TupleRecord(TupleId id, TupleState state, int rep)
         {
             this.id = id;
             this.state = state;
+            this.rep = rep;
         }
 
         public string getUID()
         {
             return id.id; 
+        }
+
+        public int getRep()
+        {
+            return rep;
         }
     }
 
