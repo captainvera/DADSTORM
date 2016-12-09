@@ -232,7 +232,7 @@ namespace DADSTORM
 
                 if (splt[0] == "LoggingLevel")
                 {
-                    if (splt[1] == "light" || splt[1] == "full")
+                    if (splt[1] == "light" || splt[1] == "full" || splt[1] == "debug")
                     {
                         logging = splt[1];
                         Log.writeLine("Logging: " + splt[1], "Puppetmaster");

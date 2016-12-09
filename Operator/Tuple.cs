@@ -42,11 +42,18 @@ namespace DADSTORM
             setId(tup.getId());
         }
 
+        public Tuple(string[] str)
+        {
+            _items = str;
+            _size = str.Count();
+            _id = new TupleId(generateId());
+        }
+
         public void update(String op, int rep)
         {
             if(_id == null)
             {
-                Console.WriteLine("WTTFFFFFFFFFFFFFFFFFFFFFFFFFFF");
+                Console.WriteLine("");
             }
             _id.op = op;
             _id.rep = rep;
@@ -54,8 +61,6 @@ namespace DADSTORM
 
         public static string generateId()
         {
-            //Random 11 digit id
-            //TODO::Make sure these can't repeat on the same replica!
             double r = RandomGenerator.nextLong(100000000000, 899999999999);
             r += 100000000000;
             String id = r.ToString();
@@ -72,12 +77,6 @@ namespace DADSTORM
             _id.id = id.id;
             _id.op = id.op;
             _id.rep = id.rep;
-        }
-
-        public Tuple(string[] str)
-        {
-            _items = str;
-            _size = str.Count();
         }
 
         public void setFromArrayCopy(string[] items)
