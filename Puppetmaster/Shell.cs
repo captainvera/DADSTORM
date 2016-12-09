@@ -25,7 +25,7 @@ namespace DADSTORM
             new StatusCommand(this);
             new WaitCommand(this);
             new ReadFileCommand(this);
-
+            new TablesCommand(this);
             _pm = pm;
         }
 
@@ -48,6 +48,9 @@ namespace DADSTORM
                         break;
                     case "all":
                         processCommandList(commands);
+                        start();
+                        break;
+                    case "skip":
                         start();
                         break;
                 }
@@ -116,6 +119,11 @@ namespace DADSTORM
         public void status()
         {
             _pm.status();
+        }
+
+        public void tables()
+        {
+            _pm.printTables();
         }
 
         public void interval(string op, int time)

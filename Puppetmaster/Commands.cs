@@ -93,6 +93,20 @@ namespace DADSTORM
         }
     }
 
+    class TablesCommand : Command
+    {
+        public TablesCommand(Shell sh) : base(sh, "tables") { }
+
+        public override void execute(string[] list)
+        {
+            if (list.Length != 1)
+            {
+                print("[Usage]" + getID() + " command has no arguments");
+            }
+            else Shell().tables();
+        }
+
+    }
     class CrashCommand : Command
     {
         public CrashCommand(Shell sh) : base(sh, "crash") { }

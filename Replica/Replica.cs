@@ -222,6 +222,11 @@ namespace DADSTORM
             return false;
         }
 
+        public void printTables()
+        {
+            sem.printTables();
+        }
+
         public void process()
         {
             Tuple data;
