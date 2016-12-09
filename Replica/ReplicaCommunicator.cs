@@ -6,49 +6,53 @@ using System.Threading.Tasks;
 
 namespace DADSTORM
 {
-    //Holds information about all previous_replicas of an operator
+    /**
+     * This class presents an abstraction to contact other repliacs that are relevant
+     * It provides methods to access the previous, own and next operator replica's
+     * The replicas are represented by a int, it is possible that two int's
+     *           refer to the same replica (in case of a take-over)
+     * All faillable replica commmunication should be done with this class
+     */
     public class ReplicaCommunicator
     {
         Dictionary<int, ReplicaHolder> previous_replicas;
         Dictionary<int, ReplicaHolder> own_replicas;
         Dictionary<int, ReplicaHolder> next_replicas;
-        //List<ReplicaHolder> own;
 
         public ReplicaCommunicator()
         {
             previous_replicas = new Dictionary<int, ReplicaHolder>();
             own_replicas = new Dictionary<int, ReplicaHolder>();
             next_replicas = new Dictionary<int, ReplicaHolder>();
-            //own = new List<ReplicaHolder>();
         }
 
         public void parseDto(OperatorDTO dto)
         {
-            Console.WriteLine("----------------------- Node connectivity Table -----------------------");
-            Console.WriteLine("....................... Before .......................");
+            Log.debug("----------------------- Node connectivity table -----------------------", "ReplicaCommunicator");
+            Log.debug("....................... Before .......................", "ReplicaCommunicator");
             foreach(ReplicaRepresentation rr in dto.before_op)
             {
-                Console.WriteLine("REPLICA " + rr.rep +  " of " + rr.op + " in address " + rr.addr);
+                Log.debug("REPLICA " + rr.rep +  " of " + rr.op + " in address " + rr.addr, "ReplicaCommunicator");
                 previous_replicas.Add(rr.rep, new ReplicaHolder(rr));
             }
 
-            Console.WriteLine("....................... After .......................");
+            Log.debug("....................... After .......................", "ReplicaCommunicator");
             foreach(ReplicaRepresentation rr in dto.next_op)
             {
-                Console.WriteLine("REPLICA " + rr.rep +  " of " + rr.op + " in address " + rr.addr);
+                Log.debug("REPLICA " + rr.rep +  " of " + rr.op + " in address " + rr.addr, "ReplicaCommunicator");
                 next_replicas.Add(rr.rep, new ReplicaHolder(rr));
             }
 
-            Console.WriteLine("....................... Current .......................");
+            Log.debug("....................... Current .......................", "ReplicaCommunicator");
             int i = 0;
             foreach(string s in dto.address)
             {
                 ReplicaRepresentation rr = new ReplicaRepresentation(dto.op_id, i, s);
-                Console.WriteLine("REPLICA " + rr.rep +  " of " + rr.op + " in address " + rr.addr);
+                Log.debug("REPLICA " + rr.rep +  " of " + rr.op + " in address " + rr.addr, "ReplicaCommunicator");
                 own_replicas.Add(i, new ReplicaHolder(rr));
                 i++;
             }
-            Console.WriteLine("-------------------- Node connectivity ----------------------");
+            Log.debug("----------------------------------------------------------------------", "ReplicaCommunicator");
         }
 
         public Replica getReplica(string addr)
@@ -188,6 +192,13 @@ namespace DADSTORM
             own_replicas.Add(n, rh);
         }
         
+        /**
+         * The following methods wrap faillable remote calls in a retry cycle
+         * Some methods should complete shortly and have limited retries
+         * However input for example tries indefinitely since we can assume 
+         *         that the network topology will always be fixed after a certain
+         *         ammount of time (when the replica recovers or is replaced)
+         */
         public bool input(OperatorPosition pos, int rep, Tuple t)
         {
             int tries = 0;
@@ -202,7 +213,7 @@ namespace DADSTORM
                 catch (Exception e)
                 {
                     tries++;
-                    Console.WriteLine("!!!!!!!!!!Failed input call... retrying!!!!!!!!!!!");
+                    Log.debug("!!!!!!!!!!Failed input call... retrying!!!!!!!!!!!", "ReplicaCommunicator");
                     System.Threading.Thread.Sleep(1000);
                 }
             }
@@ -222,7 +233,7 @@ namespace DADSTORM
                 catch (Exception e)
                 {
                     tries++;
-                    Console.WriteLine("!!!!!!!!!!failed tuple confirmed!!!!!!!!!!!!!!!");
+                    Log.debug("!!!!!!!!!!failed tuple confirmed!!!!!!!!!!!!!!!", "ReplicaCommunicator");
                     System.Threading.Thread.Sleep(1000);
                 }
             }
@@ -242,7 +253,7 @@ namespace DADSTORM
                 catch (Exception e)
                 {
                     tries++;
-                    Console.WriteLine("!!!!!!!!!!!!!!!!!! failed addrecord !!!!!!!!!!");
+                    Log.debug("!!!!!!!!!!!!!!!!!! failed addrecord !!!!!!!!!!", "ReplicaCommunicator");
                     System.Threading.Thread.Sleep(1000);
                 }
             }
@@ -262,7 +273,7 @@ namespace DADSTORM
                 catch (Exception e)
                 {
                     tries++;
-                    Console.WriteLine("!!!!!!!!!!!!!!!!!!! purgeRecord !!!!!!!!!!!!!!!!!");
+                    Log.debug("!!!!!!!!!!!!!!!!!!! purgeRecord !!!!!!!!!!!!!!!!!", "ReplicaCommunicator");
                     System.Threading.Thread.Sleep(1000);
                 }
             }
@@ -282,7 +293,7 @@ namespace DADSTORM
                 catch (Exception e)
                 {
                     tries++;
-                    Console.WriteLine("!!!!!!!!!!!!!!!!!!!! fetchTuple !!!!!!!!!!!!!!!!!!");
+                    Log.debug("!!!!!!!!!!!!!!!!!!!! fetchTuple !!!!!!!!!!!!!!!!!!", "ReplicaCommunicator");
                     System.Threading.Thread.Sleep(1000);
                 }
             }
@@ -296,6 +307,10 @@ namespace DADSTORM
         Next            
     }
 
+    /**
+     * Holds a description of a replica and it's remote object
+     * The remote object is only created when necessary
+     */
     public class ReplicaHolder
     {
         //Remote object to a replica

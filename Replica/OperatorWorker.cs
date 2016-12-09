@@ -124,13 +124,6 @@ namespace DADSTORM
             _source.Cancel();
             _wthread.Abort();
         }
-
-        public void onInterval(object sender, IntervalEventArgs e)
-        {
-            _intervalTime = e.time;
-            _interval = true;
-            _source.Cancel();
-        }
         /** ------------------------------------------------------  **/
 
         private IOperator _op;
@@ -145,7 +138,6 @@ namespace DADSTORM
         //Internal state variables
         //Boolean read and writes are atomic, no need for thread locking
         private bool _freeze;
-        private bool _interval;
         private int _intervalTime;
 
         ManualResetEvent _unfreezeSignal;
@@ -160,12 +152,10 @@ namespace DADSTORM
             _source = new CancellationTokenSource();
             _unfreezeSignal = new ManualResetEvent(false);
             _freeze = false;
-            _interval = false;
 
             parentPool.freezeEventRaised += new freezeEventHandler(onFreeze);
             parentPool.unfreezeEventRaised += new unfreezeEventHandler(onUnfreeze);
             parentPool.crashEventRaised += new crashEventHandler(onCrash);
-            parentPool.intervalEventRaised += new intervalEventHandler(onInterval);
         }
 
         public void start()
@@ -223,15 +213,6 @@ namespace DADSTORM
                 _freeze = false;
                 Log.info("Received freeze event. Freezing...", "Thread" + Thread.CurrentThread.ManagedThreadId);
                 waitFrozen();
-            }
-
-            else if(_interval)
-            {
-                _interval = false;
-                Log.info("Received interval event. Freezing for " + _intervalTime + "...", "Thread" + Thread.CurrentThread.ManagedThreadId);
-                Thread.Sleep(_intervalTime);
-                Log.info("Interval time finished. Unfreezing...", "Thread" + Thread.CurrentThread.ManagedThreadId);
-                process();
             }
         }        
 

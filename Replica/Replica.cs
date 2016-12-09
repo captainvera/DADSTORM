@@ -145,67 +145,45 @@ namespace DADSTORM
             input_ops = dto.before_op;
             rep_factor = Int32.Parse(dto.rep_fact);
 
+            //Setting global logging level for this process
+            Config.setLoggingLevel("debug");
+            log = new RemoteLogger("Replica" + op_id + "-" + rep_number.ToString(), dto.pmAdress);
+
+
             //Semantics factory plz
+            log.info("Creating replica communicator...");
             comm = new ReplicaCommunicator();
             comm.parseDto(dto);
 
-            Console.WriteLine("------------------------- I AM REPLICA " + rep_number + " of operator " + op_id);
-            //Setting global logging level for this process
-            Config.setLoggingLevel("debug");
+            log.writeLine("Creatting replica " + rep_number + " of operator " + op_id + " with adress " + address);
 
-            log = new RemoteLogger("Replica" + op_id + "-" + rep_number.ToString(), dto.pmAdress);
-
+            log.info("Creating routing strategy");
             //Routing Strategy for this replica
             router = RoutingStrategyFactory.create(routing, this);
 
-            //op = new op(op_spec);
+            log.info("Creating operator");
+            //Operator to be used
             op = OperatorFactory.create(dto.op_spec[0], dto.op_spec.GetRange(1, dto.op_spec.Count - 1).ToArray());
 
-            Task.Factory.StartNew(() =>
-            {
-                Console.WriteLine("STARTING TASK");
-                System.Threading.Thread.Sleep(5000);
-                Console.WriteLine("PINGING");
+            log.info("Creating semantic strategy");
+            //Semantic Strategy to be used
+            sem = SemanticStrategyFactory.create(semantics, this);
 
-                foreach (ReplicaRepresentation rr in dto.before_op)
-                {
-                    Console.WriteLine("--------- PINGING" + "Hello from " + dto.op_id + " and " + rep_number);
-                    Replica r = comm.getPreviousReplica(rr.rep);
-                    r.ping(">>>>>>>>>>>>>>>>> Hello from " + dto.op_id + " and " + rep_number + " to " + rr.op + " | " + rr.rep);
-                }
-
-
-                Console.WriteLine("YOOOOOO MY REP FACTOR IS " + rep_factor);
-                for(int i = 0; i < rep_factor; i ++)
-                {
-                    if (i != rep_number)
-                    {
-                        Replica r = comm.getOwnReplica(i);
-                        Console.WriteLine("--------->>>>>> PINGING from " + rep_number + " to " + i);
-                        r.ping(">>>>>>>>>>>>>>>>>>>> Hello from " + dto.op_id + " and " + rep_number);
-                    }
-                }
-
-                Console.WriteLine("&&&&&&&&&&&&&&&&&&&& PRINTING TABLES MY FRIENDS!!");
-                sem.printTables();
-            });
-
-            sem = new ExactlyOnce(this);
-
+            log.info("Setting up buffers & operators");
             //Multithreading setup
             input_buffer = new BlockingCollection<Tuple>();
             output_buffer = new BlockingCollection<Tuple>();
+
+            //Currently only using 1 thread for processing tuples
             op_pool = new OperatorWorkerPool(1, op, input_buffer, output_buffer);
 
-            //Are you alive setup
-            log.debug("Setting up \"Are you alive\" requests");
+            log.info("Starting timer thread for alive pings");
 
-            //Timer timer = new Timer(isAlive, null, 5000, 5000);
-            log.debug("Starting timer for alive ping");
             Thread timer = new Thread(new ThreadStart(isAliveT));
             timer.IsBackground = true;
             timer.Start();
 
+            //Proccess any input operators
             //Check if we have input files
             tfr_workers = new List<TupleFileReaderWorker>();
             foreach (string s in dto.input_ops)
@@ -219,6 +197,37 @@ namespace DADSTORM
             }
 
             log.writeLine("Now online but not processing");
+
+            //sem = new ExactlyOnce(this);
+
+            //Task.Factory.StartNew(() =>
+            //{
+            //    Console.WriteLine("STARTING TASK");
+            //    System.Threading.Thread.Sleep(5000);
+            //    Console.WriteLine("PINGING");
+
+            //    foreach (ReplicaRepresentation rr in dto.before_op)
+            //    {
+            //        Console.WriteLine("--------- PINGING" + "Hello from " + dto.op_id + " and " + rep_number);
+            //        Replica r = comm.getPreviousReplica(rr.rep);
+            //        r.ping(">>>>>>>>>>>>>>>>> Hello from " + dto.op_id + " and " + rep_number + " to " + rr.op + " | " + rr.rep);
+            //    }
+
+
+            //    Console.WriteLine("YOOOOOO MY REP FACTOR IS " + rep_factor);
+            //    for(int i = 0; i < rep_factor; i ++)
+            //    {
+            //        if (i != rep_number)
+            //        {
+            //            Replica r = comm.getOwnReplica(i);
+            //            Console.WriteLine("--------->>>>>> PINGING from " + rep_number + " to " + i);
+            //            r.ping(">>>>>>>>>>>>>>>>>>>> Hello from " + dto.op_id + " and " + rep_number);
+            //        }
+            //    }
+
+            //    Console.WriteLine("&&&&&&&&&&&&&&&&&&&& PRINTING TABLES MY FRIENDS!!");
+            //    sem.printTables();
+            //});
         }
 
         public void enforceState()
@@ -226,17 +235,6 @@ namespace DADSTORM
             while(frozen)
             {
                 Thread.Sleep(50);
-            }
-        }
-
-        public void inputSafe(Tuple t)
-        {
-            enforceState();
-            log.debug("Received tuple " + t.toString());
-
-            if (sem.accept(t))
-            {
-                input_buffer.Add(t);
             }
         }
 
@@ -258,17 +256,18 @@ namespace DADSTORM
             Tuple data;
             while (true)
             {
-                Console.WriteLine("afssdgsagasgasfgfasgasfgfsgfdgdgd SIIIIIIIIIIIZE is " + output_buffer.Count);
-                log.debug("SIIIIIIIIIIIZE is " + output_buffer.Count);
+                log.debug("Outputting next tuple:");
 
                 data = output_buffer.Take();
-                log.debug("Tuple is " + data.toString());
-                log.debug("----> Removing tuple id:" + data.getId().id + " | " + data.getId().op + " | " + data.getId().rep);
+
+                log.debug("- tuple is " + data.toString());
+                log.debug("- tuple id is " + data.getId().toString());
 
                 if(data.getSize() == 0)
                 {
                     //Null tuple result, still have to signal the tuple
-                    Console.WriteLine("======================== OK, we got a null result");
+                    log.debug("Tuple processing resulted in null");
+
                     string prev_op = data.getId().op;
                     int prev_rep = data.getId().rep;
 

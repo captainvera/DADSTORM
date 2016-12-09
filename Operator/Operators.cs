@@ -166,7 +166,9 @@ namespace DADSTORM
 
             int tries = 0;
 
-            while (tries < 8)
+            //Only here for multi threading support in certain operator operations
+            //like file reading
+            while (tries < 10)
             {
                 try
                 {
@@ -174,8 +176,12 @@ namespace DADSTORM
                     IList<IList<string>> lists = (IList<IList<string>>)result;
 
                     //TODO::XXX::Make tuples great again! (send all received tuples, not just list[0])
-                    Tuple ret = new Tuple(lists[0].ToArray<string>());
+                    foreach(List<string> list in lists)
+                    {
+                        Tuple tup = new Tuple(list.ToArray());
+                    }
 
+                    Tuple ret = new Tuple(lists[0].ToArray<string>());
                     Log.debug("Success with {0} tries", "CustomOperator.process()", tries + 1);
 
                     ret.setId(t.getId());
