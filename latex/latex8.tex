@@ -135,27 +135,26 @@ small representation of a tuple containing its Tuple Id, as well as the
 replica emiting the tuple record. This way the tuple record contains only
 the necessary information for a node to re-process a tuple that wasn't
 properly processed due to failure. For information storing purposes the
-tuple records can have a state (pending or purged) that is relevant since
-a tuple with the purged state is guaranteed to have been processed on that
-node. (ALGORITHM): When a node receives a tuple the first thing it must do
-is insert it into the delivery table and its shared tuple record table.
-The node then synchronizes every table with other replicas shared tables
-and finnaly places the tuple in the output buffer. After the tuple is sent
-and confirmation is received the node will first issue the deletion of the
-tuple record of every other shared table and purge its own shared table of
-the same tuple. Finally it will warn the replica which the tuple
-originated from that it can finally delete it from its delivery table
-since it was already received by the forward node. Finnaly this
-information is used whenever a node takes over another failling node. It
-scans its shared table looking for tuple records of the dead node and for
-each record it requests the tuple to the replica it originated from.
-Finnaly the tuple is processed and sent to the following node, by the same
-procedures explained before, as if a new tuple was received. Note
-that this approach only ensures the semantics of the delivery in case of a 
-single horizontal failure (when two sequential replicas on the path of
-processing a tuple fail) It could also support more failures if
-necessary by extending the number of nodes where a tuple is kept
-before it is delivered.
+tuple records can have a state (pending or purged) that is used to store
+tuple records of the tuples processed by a replica in a purged state
+instead of deleting them. (ALGORITHM): When a node receives a tuple the first
+thing it must do is insert it into the delivery table and its shared tuple
+record table.  The node then synchronizes every table with other replicas
+shared tables and finnaly places the tuple in the output buffer. After the
+tuple is sent and confirmation is received the node will first issue the
+deletion of the tuple record of every other shared table and purge its own
+shared table of the same tuple. Finally it will warn the replica which the
+tuple originated from that it can finally delete it from its delivery table
+since it was already received by the forward node. Finnaly this information is
+used whenever a node takes over another failling node. It scans its shared
+table looking for tuple records of the dead node and for each record it
+requests the tuple to the replica it originated from.  Finnaly the tuple is
+processed and sent to the following node, by the same procedures explained
+before, as if a new tuple was received. Note that this approach only
+ensures the semantics of the delivery in case of a single horizontal
+failure (when two sequential replicas on the path of processing a tuple
+fail) It could also support more failures if necessary by extending the
+number of nodes where a tuple is kept before it is delivered.
 
 
 %------------------------------------------------------------------------- 
