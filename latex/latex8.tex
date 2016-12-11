@@ -1,0 +1,337 @@
+
+%
+%  $Description: Author guidelines and sample document in
+%  LaTeX 2.09$ 
+%
+%  $Author: ienne $ $Date: 1995/09/15 15:20:59 $ $Revision:
+%  1.4 $
+%
+
+\documentclass[times, 10pt,twocolumn]{article}
+\usepackage{latex8} \usepackage{times}
+
+%\documentstyle[times,art10,twocolumn,latex8]{article}
+
+%-------------------------------------------------------------------------
+%take the % away on next line to produce the final
+%camera-ready version 
+\pagestyle{empty}
+
+%------------------------------------------------------------------------- 
+\begin{document}
+
+\title{\ Distributed and Fault-Tolerant System for Tuple
+Streaming}
+
+			 \author{Jorge Santos, Miguel Vera, Jos\'e Semedo \\
+				 Instituto Superior Tecnico\\ Computer Science
+				 Department\\ ??IN-F??  Av. Rovisco Pais, 1,
+				 1049-001 Lisboa\\ \{jorge.pessoa, miguel.vera,
+				 jose.semedo\}@tecnico.ulisboa.pt }
+
+\maketitle \thispagestyle{empty}
+
+\begin{abstract} The ABSTRACT is to be in fully-justified
+	italicized text, at the top of the left-hand column, below
+	the author and affiliation information.  Use the word
+	``Abstract'' as the title, in 12-point Times, boldface
+	type, centered relative to the column, initially
+	capitalized. The abstract is to be in 10-point,
+	single-spaced type.  The abstract may be up to 3 inches
+	(7.62 cm) long. Leave two blank lines after the Abstract,
+	then begin the main text.  \end{abstract}
+
+
+
+%------------------------------------------------------------------------- 
+\Section{Introduction}
+
+Please follow the steps outlined below when submitting your
+manuscript to the IEEE Computer Society Press. Note there
+have been some changes to the measurements from previous
+instructions. 
+
+%------------------------------------------------------------------------- 
+\Section{Solutions}
+
+Describe the solutions in an overall way
+
+%------------------------------------------------------------------------- 
+\SubSection{Solution 1}
+
+Solution 1 advantages/disadvantages
+
+%------------------------------------------------------------------------- 
+\SubSection{Solution 2}
+
+Solution 1 advantages/disadvantages
+
+%------------------------------------------------------------------------- 
+\Section{Used solution}
+
+Describe the solutions in an overall way
+
+%------------------------------------------------------------------------- 
+\SubSection{Fault-tolerance algorithm}
+
+Fault tolerance algorithm: how it works, etc
+
+%------------------------------------------------------------------------- 
+\SubSection{Semantics algorithm}
+
+One of the biggest concern in the distributed tuple processing is being
+able to a guarantee a certain semantics associated with the processing of
+a tuple in the presence of system failures, and inevitably the way in
+needs to reconfigure in order to continue functioning properly. This issue
+is inevitably linked to the way that the system does fault tolerance. The
+algorithm used for at least once and exactly once is very simmilar, as
+well as using the same data structures and most of the same procedures,
+but the differences will be explained below. In the follow subsections we
+explain how the system assures that a tuple is processed at most once, at
+least once and exactly once.
+
+%------------------------------------------------------------------------- 
+\subsubsection{At-Most-Once}
+
+To assure that a tuple is processed at most once, a system must only send
+any tuple once, indepent of failure. Since a configuration for this system
+is dependent on being an ?acyclic? graph, the only guarantee we need to
+provide is that there isn't any kind of mechanism to resend tuples in case
+of a takeover of a node that crashed by another node.  As such the
+implementation of this strategy relies on not sharing any kind of
+information about tuples already processed, and not doing anything upon
+the takeover. This way, a certain tuple from an input is only sent once in
+the forward direction of the distributed network, and in case of a node
+failing all the tuples that it had processed but not sent yet won't be
+processed at all.
+
+%------------------------------------------------------------------------- 
+\subsubsection{At-Least-Once}
+
+(????????????????????Maybe should be in a upper section) If the system
+must process a certain tuple at least once then there must a guarantee
+that in any kind of a node failure the tuples that weren't successfuly
+sent to a node in failure are sent either to another node or to the the
+original node if it recovers. There are however other scenarios in which a
+node can fail, for example after receiving a tuple but before sending it
+to the next operator if there is any. Keeping in mind that the system must
+obviously be ashynchronous in this confirmation, then the previous node
+can't easily know it has to resend the tuple, and when it doesn't, or how
+long it needs to keep the tuple.  In this approach the tuples would need
+to be kept in every operator at least until the tuple was processed by
+every node, presenting scalability issues.  (DATA STRUCTURES) To understand how the
+algorithm works we must first explain the used data structures: A tuple is
+identified by it's Tuple Id structure which represents a stream of a tuple
+along the processing chain. In each specific tuple there is an unique id
+that is usualy kept along all operators, unless there must an output of
+several tuples from the same one, efectively divering the tuple stream.
+The remaining information kept in the Tuple Id refers to the operator and
+replica it came from. In each node there is a delivery table (a simple
+Hash-based Map that stores each tuple by its unique id) and that keeps
+every tuple received in a replica until it can be disposed.  There is
+aswell a shared tuple table in each node that stores Tuple Records
+associated to a tuple id (in a simillar Hash Map). A tuple record is a
+small representation of a tuple containing its Tuple Id, as well as the
+replica emiting the tuple record. This way the tuple record contains only
+the necessary information for a node to re-process a tuple that wasn't
+properly processed due to failure. For information storing purposes the
+tuple records can have a state (pending or purged) that is relevant since
+a tuple with the purged state is guaranteed to have been processed on that
+node. (ALGORITHM): When a node receives a tuple the first thing it must do
+is insert it into the delivery table and its shared tuple record table.
+The node then synchronizes every table with other replicas shared tables
+and finnaly places the tuple in the output buffer. After the tuple is sent
+and confirmation is received the node will first issue the deletion of the
+tuple record of every other shared table and purge its own shared table of
+the same tuple. Finally it will warn the replica which the tuple
+originated from that it can finally delete it from its delivery table
+since it was already received by the forward node. Finnaly this
+information is used whenever a node takes over another failling node. It
+scans its shared table looking for tuple records of the dead node and for
+each record it requests the tuple to the replica it originated from.
+Finnaly the tuple is processed and sent to the following node, by the same
+procedures explained before, as if a new tuple was received. Note
+that this approach only ensures the semantics of the delivery in case of a 
+single horizontal failure (when two sequential replicas on the path of
+processing a tuple fail) It could also support more failures if
+necessary by extending the number of nodes where a tuple is kept
+before it is delivered.
+
+
+%------------------------------------------------------------------------- 
+\subsubsection{Exactly-Once}
+
+%------------------------------------------------------------------------- 
+\Section{Evaluation}
+
+Evaluation of the solution
+
+%------------------------------------------------------------------------- 
+\SubSection{Quantitative}
+
+Quantitive evaluation
+
+%------------------------------------------------------------------------- 
+\SubSection{Qualitative}
+
+Qualitative evaluation
+
+%------------------------------------------------------------------------- 
+\Section{Discussion}
+
+Evaluation of the solution
+
+%------------------------------------------------------------------------- 
+\Section{Conclusion}
+
+Evaluation of the solution
+
+%------------------------------------------------------------------------- 
+\Section{Style Guidelines}
+
+Please follow the steps outlined below when submitting your manuscript to
+the IEEE Computer Society Press. Note there have been some changes to the
+measurements from previous instructions. 
+
+%------------------------------------------------------------------------- 
+\SubSection{Margins and page numbering}
+
+All printed material, including text, illustrations, and charts, must be
+kept within a print area 6-7/8 inches (17.5 cm) wide by 8-7/8 inches
+(22.54 cm) high.  Do not write or print anything outside the print area.
+Number your pages lightly, in pencil, on the upper right-hand corners of
+the BACKS of the pages (for example, 1/10, 2/10, or 1 of 10, 2 of 10, and
+so forth). Please do not write on the fronts of the pages, nor on the
+lower halves of the backs of the pages.
+
+
+%------------------------------------------------------------------------ 
+\SubSection{Formatting your paper}
+
+All text must be in a two-column format. The total allowable width of the
+text area is 6-7/8 inches (17.5 cm) wide by 8-7/8 inches (22.54 cm) high.
+Columns are to be 3-1/4 inches (8.25 cm) wide, with a 5/16 inch (0.8 cm)
+space between them.  The main title (on the first page) should begin 1.0
+inch (2.54 cm) from the top edge of the page. The second and following
+pages should begin 1.0 inch (2.54 cm) from the top edge. On all pages, the
+bottom margin should be 1-1/8 inches (2.86 cm) from the bottom edge of the
+page for $8.5 \times 11$-inch paper; for A4 paper, approximately 1-5/8
+inches (4.13 cm) from the bottom edge of the page.
+
+%------------------------------------------------------------------------- 
+\SubSection{Type-style and fonts}
+
+Wherever Times is specified, Times Roman may also be used.  If neither is
+available on your word processor, please use the font closest in
+appearance to Times that you have access to.
+
+MAIN TITLE. Center the title 1-3/8 inches (3.49 cm) from the top edge of
+the first page. The title should be in Times 14-point, boldface type.
+Capitalize the first letter of nouns, pronouns, verbs, adjectives, and
+adverbs; do not capitalize articles, coordinate conjunctions, or
+prepositions (unless the title begins with such a word).  Leave two blank
+lines after the title.
+
+AUTHOR NAME(s) and AFFILIATION(s) are to be centered beneath the title and
+printed in Times 12-point, non-boldface type.  This information is to be
+followed by two blank lines.
+
+The ABSTRACT and MAIN TEXT are to be in a two-column format. 
+
+MAIN TEXT. Type main text in 10-point Times, single-spaced.  Do NOT use
+double-spacing. All paragraphs should be indented 1 pica (approx. 1/6 inch
+or 0.422 cm). Make sure your text is fully justified---that is, flush left
+and flush right.  Please do not place any additional blank lines between
+paragraphs.  Figure and table captions should be 10-point Helvetica
+boldface type as in \begin{figure}[h] \caption{Example of caption.}
+\end{figure}
+
+\noindent Long captions should be set as in \begin{figure}[h]
+	\caption{Example of long caption requiring more than one line. It is not
+	typed centered but aligned on both sides and indented with an additional
+margin on both sides of 1~pica.} \end{figure}
+
+\noindent Callouts should be 9-point Helvetica, non-boldface type.
+Initially capitalize only the first word of section titles and first-,
+second-, and third-order headings.
+
+FIRST-ORDER HEADINGS. (For example, {\large \bf 1.  Introduction}) should
+be Times 12-point boldface, initially capitalized, flush left, with one
+blank line before, and one blank line after.
+
+SECOND-ORDER HEADINGS. (For example, {\elvbf 1.1. Database elements})
+should be Times 11-point boldface, initially capitalized, flush left, with
+one blank line before, and one after. If you require a third-order heading
+(we discourage it), use 10-point Times, boldface, initially capitalized,
+flush left, preceded by one blank line, followed by a period and your text
+on the same line.
+
+%------------------------------------------------------------------------- 
+\SubSection{Footnotes}
+
+Please use footnotes sparingly% \footnote {% Or, better still, try to
+	avoid footnotes altogether.  To help your readers, avoid using footnotes
+	altogether and include necessary peripheral observations in the text
+	(within parentheses, if you prefer, as in this sentence). and place them
+	at the bottom of the column on the page on which they are referenced.
+	Use Times 8-point type, single-spaced.
+
+
+%------------------------------------------------------------------------- 
+\SubSection{References}
+
+List and number all bibliographical references in 9-point Times,
+single-spaced, at the end of your paper. When referenced in the text,
+enclose the citation number in square brackets, for example~\cite{ex1}.
+Where appropriate, include the name(s) of editors of referenced books.
+
+%------------------------------------------------------------------------- 
+\SubSection{Illustrations, graphs, and photographs}
+
+All graphics should be centered. Your artwork must be in place in the
+article (preferably printed as part of the text rather than pasted up).
+If you are using photographs and are able to have halftones made at a
+print shop, use a 100- or 110-line screen. If you must use plain photos,
+they must be pasted onto your manuscript. Use rubber cement to affix the
+images in place. Black and white, clear, glossy-finish photos are
+preferable to color. Supply the best quality photographs and illustrations
+possible. Penciled lines and very fine lines do not reproduce well.
+Remember, the quality of the book cannot be better than the originals
+provided. Do NOT use tape on your pages!
+
+%------------------------------------------------------------------------- 
+\SubSection{Color}
+
+The use of color on interior pages (that is, pages other than the cover)
+is prohibitively expensive. We publish interior pages in color only when
+it is specifically requested and budgeted for by the conference
+organizers. DO NOT SUBMIT COLOR IMAGES IN YOUR PAPERS UNLESS SPECIFICALLY
+INSTRUCTED TO DO SO.
+
+%------------------------------------------------------------------------- 
+\SubSection{Symbols}
+
+If your word processor or typewriter cannot produce Greek letters,
+mathematical symbols, or other graphical elements, please use
+pressure-sensitive (self-adhesive) rub-on symbols or letters (available in
+most stationery stores, art stores, or graphics shops).
+
+%------------------------------------------------------------------------ 
+\SubSection{Copyright forms}
+
+You must include your signed IEEE copyright release form when you submit
+your finished paper. We MUST have this form before your paper can be
+published in the proceedings.
+
+%------------------------------------------------------------------------- 
+\SubSection{Conclusions}
+
+Please direct any questions to the production editor in charge of these
+proceedings at the IEEE Computer Society Press: Phone (714) 821-8380, or
+Fax (714) 761-1784.
+
+%------------------------------------------------------------------------- 
+\nocite{ex1,ex2} \bibliographystyle{latex8} \bibliography{latex8}
+
+\end{document}
+
