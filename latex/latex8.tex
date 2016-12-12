@@ -74,54 +74,99 @@ Solution 1 advantages/disadvantages
 
 Talk about fault-tolerance in a general way
 
-Our fault tolerance algorithm provides the ability to tolerate a downed replica of any operator, as well as the it's recuperation.
-The algorithm we used is possible due to the use of a simple, yet resourceful abstraction mechanism, which the semanthics algorithm will greatly benefit from aswell.
-Each of the replica mantains three sets of of dictionaries, except the first and last operator's replicas. This is because each of the dictionaries holds the correspondence between a replica and the dictionary holder's view of it.
-One dictionary abstracts all of the colleague replicas of the holder (replicas of the same operator as itself), another distinct dictionary abstracts the replicas of the above operator, and again for the one below.
-So every replica of every operator has the ability to establish a connection with what they think is every replica above and below them, as well as their colleagues.
+Our fault tolerance algorithm provides the ability to tolerate a downed
+replica of any operator, as well as the it's recuperation.  The algorithm
+we used is possible due to the use of a simple, yet resourceful
+abstraction mechanism, which the semanthics algorithm will greatly benefit
+from aswell.  Each of the replica mantains three sets of of dictionaries,
+except the first and last operator's replicas. This is because each of the
+dictionaries holds the correspondence between a replica and the dictionary
+holder's view of it.  One dictionary abstracts all of the colleague
+replicas of the holder (replicas of the same operator as itself), another
+distinct dictionary abstracts the replicas of the above operator, and
+again for the one below.  So every replica of every operator has the
+ability to establish a connection with what they think is every replica
+above and below them, as well as their colleagues.
 
 %------------------------------------------------------------------------- 
 \SubSection{Fault Detection}
 
-Going into more detail on how a downed replica can be detected.
-Colleague replicas among themselves have the illusion of being in a ring like topology. Each replica periodically pings the following colleague like ilustrated in fig.X (FIGURA DE REPLICAS EM CIRCULO COM INDEXES E SETAS DE PING). A replica can efficiently know what replica it preceeds. It knows it's own replica index (i)therefor it knows the index of the replica it has to ping (ping i), by applying the following rule: ping i = (i + 1) \% number of replicas.
-If the pinged replica is detected to be down, then the replica can just calculate the following replica's index using the very same rule, and contact it, asking for it to take over the downed replica's spot.
-\begin{figure}[h] 
-	\includegraphics[width=\columnwidth]{fault_detection}
-	\caption{How colleague replicas ping each other}
+\begin{figure}[h]
+	\includegraphics[width=\columnwidth]{fault_detection} \caption{How
+	colleague replicas ping each other} 
 \end{figure}
+
+Going into more detail on how a downed replica can be detected.  Colleague
+replicas among themselves have the illusion of being in a ring like
+topology. Each replica periodically pings the following colleague like
+ilustrated in fig.X (FIGURA DE REPLICAS EM CIRCULO COM INDEXES E SETAS DE
+PING). A replica can efficiently know what replica it preceeds. It knows
+it's own replica index (i)therefor it knows the index of the replica it
+has to ping (ping i), by applying the following rule: ping i = (i + 1) \%
+number of replicas.  If the pinged replica is detected to be down, then
+the replica can just calculate the following replica's index using the
+very same rule, and contact it, asking for it to take over the downed
+replica's spot. 
 
 %------------------------------------------------------------------------- 
 \SubSection{Take Over Procedure}
 
-The replica taking over goes through the 3 sets of replica holding abstractions aforementioned.
-Firstly it iterates over the the replica holding abstractions corresponding to the operator above it, and for each one, it substitues the place of the replica detected as downed with a representation of itself. It literally takes over it's spot, so every command that would be aimed at the downed replica, is routed to the one that took over it's functions.
-It then repeats the process for it's colleague replicas and the ones of the operator below it. (FIGURA COM SETAS E O CRLH)
+The replica taking over goes through the 3 sets of replica holding
+abstractions aforementioned.  Firstly it iterates over the the replica
+holding abstractions corresponding to the operator above it, and for each
+one, it substitues the place of the replica detected as downed with a
+representation of itself. It literally takes over it's spot, so every
+command that would be aimed at the downed replica, is routed to the one
+that took over it's functions.  It then repeats the process for it's
+colleague replicas and the ones of the operator below it. (FIGURA COM
+SETAS E O CRLH)
 
-\begin{figure}[h] 
-	\includegraphics[width=\columnwidth]{take_over}
-	\caption{Take over prodecure illustrated}
-\end{figure}
+\begin{figure}[h] \includegraphics[width=\columnwidth]{take_over}
+	\caption{Take over prodecure illustrated} \end{figure}
 
-There is however a small detail that caused a somewhat meaningful problem. In the case of an operator having only two replicas, and one of them going down, the only remaining replica would substitute the representation of it's colleague with itself, and then effectively start pinging itself. This caused not only some performance issues besides other problems.
-In order to fix this efficiently we had to break a small layer of abstraction and add another structure to the replicas, a list containing the indexes of the replicas it has taken over. This allows a replica to know whether it would be attempting to connect to itself or not.
+There is however a small detail that caused a somewhat meaningful problem.
+In the case of an operator having only two replicas, and one of them going
+down, the only remaining replica would substitute the representation of
+it's colleague with itself, and then effectively start pinging itself.
+This caused not only some performance issues besides other problems.  In
+order to fix this efficiently we had to break a small layer of abstraction
+and add another structure to the replicas, a list containing the indexes
+of the replicas it has taken over. This allows a replica to know whether
+it would be attempting to connect to itself or not.
 
-After a replica has fully taken over for another one, all other replicas have the illusion of the topology state remaining the same. This is because every method that implies connecting to another replica, obtains the connection through the abstraction layer previously described, so every work load is seamlessly diverted to the new replica.
-Only replicas within the same operator can detect downed replicas. If any other remoting method fails due to the target replica being down, it enters an active wait untill another replica takes over and the method is succesfully carried out. We chose this implementation over the option of any remoting task possibly triggering a take over, due to the possibility of the retrying of the faulting method being faster than the take over process. Fixing this issue would over complicate things, and the simpler implementation as we have now revealed it self as the faster one.
+After a replica has fully taken over for another one, all other replicas
+have the illusion of the topology state remaining the same. This is
+because every method that implies connecting to another replica, obtains
+the connection through the abstraction layer previously described, so
+every work load is seamlessly diverted to the new replica.  Only replicas
+within the same operator can detect downed replicas. If any other remoting
+method fails due to the target replica being down, it enters an active
+wait untill another replica takes over and the method is succesfully
+carried out. We chose this implementation over the option of any remoting
+task possibly triggering a take over, due to the possibility of the
+retrying of the faulting method being faster than the take over process.
+Fixing this issue would over complicate things, and the simpler
+implementation as we have now revealed it self as the faster one.
 %------------------------------------------------------------------------- 
 \SubSection{Reinstate Procedure}
 
-The reinstating protocol is simply put, the reverse of the take over process. Once a replica is brought back it goes through the same process of accessing previous, colleague and following operator's replica abstraction holding structures in that respective order, and inserting a representation of itself in it's rightful spot.
-After this, all remote methods are once again routed correctly to the reinstated replica.
-The replica that had taken over for it also has it's index list updated, meaning that the index of the reinstated replica is removed from that list.
+The reinstating protocol is simply put, the reverse of the take over
+process. Once a replica is brought back it goes through the same process
+of accessing previous, colleague and following operator's replica
+abstraction holding structures in that respective order, and inserting a
+representation of itself in it's rightful spot.  After this, all remote
+methods are once again routed correctly to the reinstated replica.  The
+replica that had taken over for it also has it's index list updated,
+meaning that the index of the reinstated replica is removed from that
+list.
 %------------------------------------------------------------------------- 
 \Section{Semantics}
 
-One of the biggest concerns in distributed tuple processing is being
-able to a guarantee certain semantics associated with the processing of
-a tuple in the presence of system failures, and inevitably the way it
-needs to reconfigure in order to continue functioning properly. This issue
-is inevitably linked to the way that the system does fault tolerance. The
+One of the biggest concerns in distributed tuple processing is being able
+to a guarantee certain semantics associated with the processing of a tuple
+in the presence of system failures, and inevitably the way it needs to
+reconfigure in order to continue functioning properly. This issue is
+inevitably linked to the way that the system does fault tolerance. The
 algorithm used for any semantic guarantee is very simillar, using the same
 data structures and most of the same procedures. We will first explain the
 general idea behind the algorithm, then used data structures and the
@@ -275,12 +320,12 @@ Qualitative evaluation
 Prior to analyzing the used algorithms, we have to acknowledge that the
 solutions aren't perfect but are a step forward from the naive approaches
 that might be picked in this situation. Most of the differences are
-actually ?intelligible?(do you mean unintelligible?) when processing small datasets, in which each
-tuple is small.  For example in this case there is an advantage of
-replicating tuples in each node after receiving from the operator,
-considering their sizes might be even smaller than the tuple records and
-there are less steps involved in the algorithm. But on the other hand, if
-we try to scale the tuple size even a little bit, then the
+actually ?intelligible?(do you mean unintelligible?) when processing small
+datasets, in which each tuple is small.  For example in this case there is
+an advantage of replicating tuples in each node after receiving from the
+operator, considering their sizes might be even smaller than the tuple
+records and there are less steps involved in the algorithm. But on the
+other hand, if we try to scale the tuple size even a little bit, then the
 tuple-replicating approach would scale much worse, resulting in huge
 amounts of exchanged data between replicas of the same operator before
 they can even process the tuples. On the other hand, replicating only
