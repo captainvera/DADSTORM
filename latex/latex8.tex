@@ -275,12 +275,12 @@ Qualitative evaluation
 Prior to analyzing the used algorithms, we have to acknowledge that the
 solutions aren't perfect but are a step forward from the naive approaches
 that might be picked in this situation. Most of the differences are
-actually ?intelligible?(do you mean unintelligible?) when processing small datasets, in which each
+actually unintelligible when processing small datasets, in which each
 tuple is small.  For example in this case there is an advantage of
 replicating tuples in each node after receiving from the operator,
 considering their sizes might be even smaller than the tuple records and
 there are less steps involved in the algorithm. But on the other hand, if
-we try to scale the tuple size even a little bit, then the
+we try to scale the tuple size even a little bit, the
 tuple-replicating approach would scale much worse, resulting in huge
 amounts of exchanged data between replicas of the same operator before
 they can even process the tuples. On the other hand, replicating only
@@ -290,7 +290,8 @@ perfect solution that applies to every kind of system in a scallable and
 eficient way.  A much better compromise is to develop the system according
 to whatever are its needs, and if possible without forgetting the
 scalability to a real word scenario of applying the developed solution.
->>>>>>> d517b09a18d490b9ce160e605ed99d0ff3b4f6d9
+As far as fault detection goes, we think that other topologies can be adopted besides our ring-like one. It would really come down to the real life application of the system. A possibly good heuristic could be how far replicas are from each other, so the whole operator ping cycle (all replicas get pinged) is made as fast as possible. With different topologies different methods of picking what replica takes over are necessary. If the topology is a tree-like, then choosing a candidate becomes much harder. Some other things can be taken into account when picking a take over candidate, for example, work load metrics can be shared with each "are you alive" in order to pick which replica would take the extra load better. Another even more complex possible solution is to have more than one replica assigned to taking over the downed replica's work load. Once again it all depends on the real life application scenario.
+Regarding the take-over and reinstating methods, we support the opinion that there aren't any meaningful variations of our adopted solution that can be done taking into account our network topology.
 
 %------------------------------------------------------------------------- 
 \Section{Conclusion}
