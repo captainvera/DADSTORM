@@ -46,30 +46,129 @@ Streaming}
 %------------------------------------------------------------------------- 
 \Section{Introduction}
 
-Please follow the steps outlined below when submitting your
-manuscript to the IEEE Computer Society Press. Note there
-have been some changes to the measurements from previous
-instructions. 
+	Data streaming distributed system architectures are used 
+throughout both research and production environments. On one
+hand, for research they provide a high degree of flexibility to 
+quickly implement and test new algorithms. On the other
+hand, for production they need to provide scalability (small effort 
+of adding servers to increase performance) and high availability 
+without the need for human intervention. Our goal was to implement
+a simplified fault-tolerant real-time distributed stream processing 
+system that has strong guarantees on the correctness of 
+it's distributed computations (semantics) and the predictability of performance 
+in case of failures (fault-tolerance).
+
+	We implemented an architecture based on tuple processing. Tuples 
+are a data structure comprised of an arbitrary number of ordered fields 
+(For simplicity all mentions of tuples will refer to tuples solely comprised
+ of Strings) and a unique ID. Our tuple streaming system is comprised of a 
+ network of operators. Tuples are streamed throughout the 
+network from a starting operator that might read them from
+a file to an ending operator that typically outputs to a file or 
+produces a result. In this system a distributed computation 
+can be seen as an acyclic graph, vertexes correspond to operators 
+and links to data input and output. Each of these operators transforms 
+the tuples they receive as input and may output them in a processed 
+form. This processing varies accordingly to the type of Operator.
+In our system we only support a narrow list of different operators
+responsible for simple operations such as filtering, counting and
+duplicating tuples among others. We also allow the loading of custom 
+dll's to allow the inclusion of operators tailored for specific cases.
+
+	Since this is a distributed system, operators may execute on 
+different machines. Furthermore operators might be divided into
+several replicas. All replicas of a certain operator perform the same 
+processing operations, however they might also be deployed in different 
+machines. These replicas distribute operator load and are the 
+core of the system's fault tolerance capabilities. 
+	Finally, the fault model we assumed when designing the system implies
+that only one replica will crash concurrently, as such, some of our 
+solutions might not be adequate for systems where other types of
+catastrophic faults might occur.
 
 %------------------------------------------------------------------------- 
 \Section{Solutions}
 
-Describe the solutions in an overall way
+	How to create a system with scaling performance, guaranteed results 
+and highly automatized fault tolerance is not a new problem. Before we
+arrived at our final solution we tested and discussed other solutions
+for fault tolerance and semantics. Some of these solutions and their main 
+advantages and disadvantages are briefly discussed ahead.
 
 %------------------------------------------------------------------------- 
-\SubSection{Solution 1}
+\SubSection{Waiting for an ACK}
 
-Solution 1 advantages/disadvantages
+	One naive approach that is often mentioned when discussing semantics and 
+result guarantees is waiting for some sort of confirmation from the 
+following replica confirming that the tuple has been successfully delivered
+to it's destination. This way there is guarantee that tuples are delivered 
+and processed correctly. 
+
+	Although it is correct to say that this provides guarantees that are uncommon
+in distributed systems, this approach is fundamentally incorrect. Implementing
+this into a data streaming distributed system would transform it into a 
+synchronous system. This would completely annihilate(??) the purpose of a distributed
+data streaming architecture. The first operator in a network would have to
+wait until the last operator to finish for it to know that the delivery and processing 
+were executed correctly and that it could continue processing tuples. 
 
 %------------------------------------------------------------------------- 
-\SubSection{Solution 2}
+\SubSection{Mirroring data throughout the network}
 
-Solution 1 advantages/disadvantages
+	 Another naive approach to semantics and fault tolerance is mirroring data  
+throughout the network. In this case it could be applied by mirroring and saving 
+received tuples on all replicas. By having all information that goes through an
+operator, replicas can guarantee that no information is lost when a fault occurs.
+Contrarily to the previous solution, this approach doesn't slow the processing 
+of tuples by the operators, but it creates other problems. 
 
+	Sending every received tuple to every other replica imposes a heavy communication
+load on the network infrastructure and creates the need for big storage 
+capabilities on machines running the replicas. Despite the fact that this solution
+works, it is sub-optimal as keeping a copy of the tuple on every replica is unnecessary.
+	
 %------------------------------------------------------------------------- 
-\Section{Used solution}
+\Section{Overview}
 
-Describe the solutions in an overall way
+	As we saw before, other solutions to this problem have several crippling 
+disadvantages. Our analysis of other approaches allowed us to avoid some of the 
+common pitfalls and get insight into factors like communication load imposed on 
+the network infrastructure. Taking this into account we designed solutions we believe 
+could be applied to real world scenarios. We tried to create an abstraction between 
+our replica fault tolerance and our semantics algorithms, guaranteeing that one does 
+not depend on the other, as such we feel that they should be seen as separate 
+entities.  (????????? vai contra o que o jorge diz????????)
+
+	Our Fault Tolerance algorithm can be divided into three separate phases: Fault
+detection, replacement and reinstating. Fault detection is handled solely by 
+the replicas of a single operator. Replicas are organized into a ring architecture
+and are responsible for detecting faults on replicas placed next to them in this
+ring. Replica replacement is also handled by the replicas, when a replica fails, 
+the replica that was responsible for it's state monitoring completely takes 
+over the failed replica's responsibilities. It signals the previous and following 
+operators to ensure they no longer send data to the failed replica. 
+Reinstating a replica is a simple process that returns the network to it's original 
+configuration. It is the opposite of the replica replacement and must again signal
+neighboring operators to communicate network topology changes.
+
+	Our semantics algorithm has three different behaviors for the three types 
+of semantics: at-most-once, at-least-once, exactly-once. The at-most-once
+doesn't require any special behavior as in this case the system always has the same 
+behavior irrespective of failures. At-least-once and exactly-once algorithms share 
+a lot of their behavior and data structures. These algorithms utilize a shared tuple table
+on replicas to keep track of the status of all tuples received by the operator, 
+where they were received from and where are supposed to be sent to. This
+table only stores the ID and status of tuples, reducing communication load in the
+network. Furthermore only the replicas on the path of a certain tuple store that tuple 
+and when needed, due to the tuple table, other replicas know where it is. Finally we also
+implemented a confirmation system where replicas can relay a signal to previous replicas
+confirming the processing of the tuple, this way tuples are only stored temporarily. 
+The main difference between exactly-once and at-least-once is that the former 
+must guarantee that tuples are never processed twice. We utilize the tuple table
+to enforce that guarantee. Every time a tuple is received it is checked against the 
+table, if it had already been processed it is not accepted. 
+
+	Further and more in-depth explanation of these algorithms follows in the next chapters.
 
 %------------------------------------------------------------------------- 
 \SubSection{Fault-tolerance algorithm}
