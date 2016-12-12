@@ -1,4 +1,3 @@
-
 %
 %  $Description: Author guidelines and sample document in
 %  LaTeX 2.09$ 
@@ -313,44 +312,53 @@ confirmation.
 %------------------------------------------------------------------------- 
 \SubSection{Analysis}
 
-To simplify the process of developing a model that fits the developed
+To simplify the process of creating a model that fits the developed
 system we will consider a few assumptions that hopefully won't distort the
-obtain results by much:
+obtained results by much:
 \begin{itemize}
 	\item The considered system is only comprised of simple operators
 		where one tuple can only originate another tuple, without stream
-		divergences
+		divergences;
 	\item The system can be simplified by some measures where $R$ is the
-		average replication factor of each operator, and $T$ is the average size
-		of a tuple being sent
+		average replication factor of each operator, $O$ is the number of
+		operators and $T$ is the average size of a tuple being sent;
 	\item Tuple Records have have a constant size of 64 bits for the unique id plus
 		32 bits to identify the operator and replica and 1 bit for the state.
-		This value is represented by $TR \approx 128\ bits$
+		This value is represented by $TR \approx 128\ bits$.
 \end{itemize}
 In this case the system consists of an acyclic (forward) graph where we can attribute a
 weight to each transition depending on what measure we're analyzing.
 
-Lets start by considering the amount of data transfered per tuple sent:
+Let's start by considering the amount of data transfered per tuple sent:
 For each tuple received by a replica it sends a tuple record to every
 other replica, so $(R-1)\times TR$. There is also a purge message that
 contains only a unique id, which we will aproximate to the Tuple Record
-(TR) size. The confirmation to the previous node also only contains the
+(TR) size. Similarly the confirmation to the previous contains the
 id. All things considered the total amount of data for each tuple received
-per replica is around 
+per replica for all the operators is 
 
-\[ (R - 1 + 1 + 1) \times TR \Rightarrow O(R \times TR) \]
+%\[ (R - 1 + 1 + 1) \times TR \times O \Rightarrow O(R \times TR \times O) 
+%\\ TR\ is\ constant\ \Rightarrow O(R \times O) \]
+
+\begin{eqnarray*}
+ &(R - 1 + 1 + 1) \times TR \times O \Rightarrow O(R \times TR \times O) \\
+ &TR\ is\ constant\ \Rightarrow O(R \times O) 
+\end{eqnarray*}
 
 Comparatively a naive solution that receives a tuple on a replica and
 replicates it through all the replicas (removing the necessity for forward
 and backwards confirmation) would require 
 
-\[ (R-1)\times T \Rightarrow O(R \times T)\]
+\[ (R-1)\times T \times O \Rightarrow O(R \times T \times O)\]
 
 The difference of both approaches being that our proposed solution scales
-on with the Average Replication Factor $R$, and $TR$ which is a constant
-value, while the naive approach will scale with $R$ and tuple size
-$T$, both scaling factors. In this sense, we can start to understand the
-performance advantages presented by our solution when $T \gg TR$.
+with the size of a tuple record, $TR$ which is a constant
+value, while the naive approach will scale with the tuple size as well
+$T$. For increasing tuple sizes the difference in data that needs to be
+exchanged between replicas for each tuple is noticeably smaller as we
+expect to confirm in the pratical results. In this sense, we can start 
+to understand the performance advantages presented by our
+solution when $T \gg TR$.
 
 
 
@@ -365,22 +373,40 @@ Qualitative evaluation
 Prior to analyzing the used algorithms, we have to acknowledge that the
 solutions aren't perfect but are a step forward from the naive approaches
 that might be picked in this situation. Most of the differences are
-actually ?intelligible?(do you mean unintelligible?) when processing small
-datasets, in which each tuple is small.  For example in this case there is
-an advantage of replicating tuples in each node after receiving from the
-operator, considering their sizes might be even smaller than the tuple
-records and there are less steps involved in the algorithm. But on the
-other hand, if we try to scale the tuple size even a little bit, then the
-tuple-replicating approach would scale much worse, resulting in huge
-amounts of exchanged data between replicas of the same operator before
-they can even process the tuples. On the other hand, replicating only
-tuple records scales in a constant way with tuple size (doesn't increase).
-So as analyzed from this feature, one thing to note is that there is no
-perfect solution that applies to every kind of system in a scallable and
-eficient way.  A much better compromise is to develop the system according
-to whatever are its needs, and if possible without forgetting the
-scalability to a real word scenario of applying the developed solution.
+actually unintelligible when processing small datasets, in which each
+tuple is small. 
 
+For example in this case there is an advantage of replicating tuples in
+each node after receiving from the operator, considering their sizes might
+be even smaller than the tuple records and there are less steps involved
+in the algorithm. But on the other hand, if we try to scale the tuple size
+even a litle bit, then the tuple-replicating approach would scale much
+worse, resulting in huge amounts of exchanged data between replicas of the
+same operator before they can even process the tuples. On the other hand,
+replicating only tuple records scales in a constant way with tuple size
+(doesn't increase).  So as analyzed from this feature, one thing to note
+is that there is no perfect solution that applies to every kind of system
+in a scallable and eficient way.  A much better compromise is to develop
+the system according to whatever are its needs, and if possible without
+forgetting the scalability to a real word scenario of applying the
+developed solution.
+
+As far as fault detection goes, we think that other topologies can be
+adopted besides our ring-like one. It would really come down to the real
+life application of the system. A possibly good heuristic could be how far
+replicas are from each other, so the whole operator ping cycle (all
+replicas get pinged) is made as fast as possible. With different
+topologies different methods of picking what replica takes over are
+necessary. If the topology is a tree-like, then choosing a candidate
+becomes much harder. Some other things can be taken into account when
+picking a take over candidate, for example, work load metrics can be
+shared with each "are you alive" in order to pick which replica would take
+the extra load better. Another even more complex possible solution is to
+have more than one replica assigned to taking over the downed replica's
+work load. Once again it all depends on the real life application scenario
+Regarding the take-over and reinstating methods, we support the opinion
+that there aren't any meaningful variations of our adopted solution that
+can be done taking into account our network topology.
 %------------------------------------------------------------------------- 
 \Section{Conclusion}
 
@@ -534,4 +560,3 @@ Fax (714) 761-1784.
 \nocite{ex1,ex2} \bibliographystyle{latex8} \bibliography{latex8}
 
 \end{document}
-
