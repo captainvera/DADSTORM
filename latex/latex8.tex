@@ -122,94 +122,91 @@ able to a guarantee a certain semantics associated with the processing of
 a tuple in the presence of system failures, and inevitably the way in
 needs to reconfigure in order to continue functioning properly. This issue
 is inevitably linked to the way that the system does fault tolerance. The
-algorithm used for any semantic guarantee is very simillar, using 
-the same data structures and most of the same procedures,
-We will first explain the general idea behind the algorithm, then used data structures and the algorithm and
-finally how it used to assure that a tuple is processed at most once,
-at least once and exactly once.
+algorithm used for any semantic guarantee is very simillar, using the same
+data structures and most of the same procedures, We will first explain the
+general idea behind the algorithm, then used data structures and the
+algorithm and finally how it used to assure that a tuple is processed at
+most once, at least once and exactly once.
 
 %------------------------------------------------------------------------- 
 \SubSection{Explanation}
 
 
-If the system
-must process a certain tuple at least once then there must a guarantee
-that in any kind of a node failure the tuples that weren't successfuly
-sent to a node in failure are sent either to another node or to the the
-original node if it recovers. There are however other scenarios in which a
-node can fail, For example after receiving a tuple but before sending it
-to the next operator. Keeping in mind that the system must
+If the system must process a certain tuple at least once then there must a
+guarantee that in any kind of a node failure the tuples that weren't
+successfuly sent to a node in failure are sent either to another node or
+to the the original node if it recovers. There are however other scenarios
+in which a node can fail, For example after receiving a tuple but before
+sending it to the next operator. Keeping in mind that the system must
 obviously be ashynchronous in this confirmation, then the previous node
 can't easily know it has to resend the tuple, and when it doesn't, or how
 long it needs to keep the tuple.  In this approach the tuples would need
 to be kept in every operator at least until the tuple was processed by
-every node, presenting scalability issues. That's why we opted to use
-an algorithm based in keeping the information of the tuples being processed
-and by which replica, as well as which replica originally contains the tuple.
-That way all the tuples that weren't sent can be processed and sent again
-if a new node takes over a dead node without the need to replica tuples by
-all nodes of an operator.
+every node, presenting scalability issues. That's why we opted to use an
+algorithm based in keeping the information of the tuples being processed
+and by which replica, as well as which replica originally contains the
+tuple.  That way all the tuples that weren't sent can be processed and
+sent again if a new node takes over a dead node without the need to
+replica tuples by all nodes of an operator.
 
 %------------------------------------------------------------------------- 
 \SubSection{Data Structures}
 
 
-To understand how the
-algorithm works we must first explain the used data structures: A tuple is
-identified by it's Tuple Id structure which represents a stream of a tuple
-along the processing chain. In each specific tuple there is an unique id
-that is usualy kept along all operators, unless there must an output of
-several tuples from the same one, efectively diverging the tuple stream.
-The remaining information kept in the Tuple Id refers to the operator and
-replica it came from. 
+To understand how the algorithm works we must first explain the used data
+structures: A tuple is identified by it's Tuple Id structure which
+represents a stream of a tuple along the processing chain. In each
+specific tuple there is an unique id that is usualy kept along all
+operators, unless there must an output of several tuples from the same
+one, efectively diverging the tuple stream.  The remaining information
+kept in the Tuple Id refers to the operator and replica it came from. 
 
-In each node there is a delivery table (a simple
-Hash-based Map that stores each tuple by its unique id) and that keeps
-every tuple received in a replica until it can be disposed.  
+In each node there is a delivery table (a simple Hash-based Map that
+stores each tuple by its unique id) and that keeps every tuple received in
+a replica until it can be disposed.  
 
-There is
-also a shared tuple table in each node that stores Tuple Records
+There is also a shared tuple table in each node that stores Tuple Records
 associated to a tuple id (in a simillar Hash Map). A tuple record is a
 small representation of a tuple containing its Tuple Id, as well as the
 replica emiting the tuple record. This way the tuple record contains only
 the necessary information for a node to re-process a tuple that wasn't
 properly processed due to failure. For information storing purposes the
-tuple records have a state (pending or purged) that is used to store
-tuple records of the tuples processed by a replica in a purged state
-instead of deleting them in order to properly know what tuples have
-already been processed by that replica.
+tuple records have a state (pending or purged) that is used to store tuple
+records of the tuples processed by a replica in a purged state instead of
+deleting them in order to properly know what tuples have already been
+processed by that replica.
 
 
 %------------------------------------------------------------------------- 
 \SubSection{Algorithm}
 
-\begin{figure}[h] 
-	\includegraphics[width=\columnwidth]{semantics}
-	\caption{Ordered steps taken when a node processes a tuple}
-\end{figure}
+\begin{figure}[h] \includegraphics[width=\columnwidth]{semantics}
+	\caption{Ordered steps taken when a node processes a tuple} \end{figure}
 
-The ordered steps represented in figure 1 show most of the necessary 
-procedures executed every time a tuple is received, to keep the data structures synchronized in order to allow a
-proper recovery when a node fails. When a node receives a tuple (1) the first
-thing it must do is insert it into it's delivery table (2) and it's shared tuple
-record table (3). The node then synchronizes every table with other replicas
-shared tables (4) and finnaly processes the tuple, sending it afterwards (5). After the
-tuple is sent and confirmation is received (6) the node will first issue the
-deletion of the tuple record of every other shared table and purge its own
-shared table of the same tuple (7). Finally it will warn the replica which the
-tuple originated from that it can finally delete it from its delivery table (8)
-since it was already received by the forward node. This information is
-used whenever a node takes over another failling node. It scans its shared
-table looking for tuple records of the dead node and for each record it finds,
-it requests the tuple to the replica that the tuple originated from. Finally that tuple is
-processed and sent to the following node, by the same procedures explained
-before, as if a new tuple was received. 
+The ordered steps represented in figure 1 show most of the necessary
+procedures executed every time a tuple is received, to keep the data
+structures synchronized in order to allow a proper recovery when a node
+fails. When a node receives a tuple (1) the first thing it must do is
+insert it into it's delivery table (2) and it's shared tuple record table
+(3). The node then synchronizes every table with other replicas shared
+tables (4) and finnaly processes the tuple, sending it afterwards (5).
+After the tuple is sent and confirmation is received (6) the node will
+first issue the deletion of the tuple record of every other shared table
+and purge its own shared table of the same tuple (7). Finally it will warn
+the replica which the tuple originated from that it can finally delete it
+from its delivery table (8) since it was already received by the forward
+node. This information is used whenever a node takes over another failling
+node. It scans its shared table looking for tuple records of the dead node
+and for each record it finds, it requests the tuple to the replica that
+the tuple originated from. Finally that tuple is processed and sent to the
+following node, by the same procedures explained before, as if a new tuple
+was received. 
 
-Note that this approach only
-ensures the semantics of the delivery in case of a single horizontal
-failure (when two sequential replicas on the path of processing a tuple
-fail). It could also support more failures if necessary by extending the
-number of nodes where a tuple is kept before it is delivered.
+Note that this approach only ensures the semantics of the delivery in case
+of a single horizontal failure (when two sequential replicas on the path
+of processing a tuple fail). It could also support more failures if
+necessary by extending the number of nodes where a tuple is kept before it
+is delivered.
 
 %------------------------------------------------------------------------- 
 \SubSection{Differences for each guarantee}
@@ -219,20 +216,20 @@ number of nodes where a tuple is kept before it is delivered.
 %------------------------------------------------------------------------- 
 \subsubsection{At-Most-Once}
 
-\forceindent To assure that a tuple is processed at most once, a system must only send
-any tuple once, indepent of failure. Since a configuration for this system
-is dependent on being an acyclic graph, the only guarantee we need to
-provide is that there isn't any kind of mechanism to resend tuples in case
-of a takeover of a node that crashed by another node.  As such the
-implementation of this strategy relies on not sharing any kind of
-information about tuples already processed, which is achieved by not executing
-any kind of the procedures explained before related to the applied algorithm
-(that isn't really applied in this case of semantics).
-This way, a certain tuple from an input is only sent once in
-the forward direction of the distributed network, and in case of a node
-failing all the tuples that it had processed but not sent yet won't be
-processed at all. The same applies to a replica that sends a tuple to the next
-replica, which in case of not getting a response, will just drop the tuple.
+\forceindent To assure that a tuple is processed at most once, a system
+must only send any tuple once, indepent of failure. Since a configuration
+for this system is dependent on being an acyclic graph, the only guarantee
+we need to provide is that there isn't any kind of mechanism to resend
+tuples in case of a takeover of a node that crashed by another node.  As
+such the implementation of this strategy relies on not sharing any kind of
+information about tuples already processed, which is achieved by not
+executing any kind of the procedures explained before related to the
+applied algorithm (that isn't really applied in this case of semantics).
+This way, a certain tuple from an input is only sent once in the forward
+direction of the distributed network, and in case of a node failing all
+the tuples that it had processed but not sent yet won't be processed at
+all. The same applies to a replica that sends a tuple to the next replica,
+which in case of not getting a response, will just drop the tuple.
 
 %------------------------------------------------------------------------- 
 \subsubsection{At-Least-Once}
@@ -243,18 +240,19 @@ delivery by itself, without the need of any changes.
 %------------------------------------------------------------------------- 
 \subsubsection{Exactly-Once}
 
-\forceindent Finally to guarantee that tuples are delivered only exactly once, and taking
-the algorithm descbibed as a starting point, there is the need to guarantee
-that a tuple is never processed twice on the same operator. The first thing
-to remember is that each tuple has a unique Id that identifies it's path
-along the processing chain. Based on that, each received tuple on a node is
-checked by it's id to guarantee that it has never been processed, by comparing
-it's unique id to every tuple record stored in the shared tuple record table
-(hence the possible states for a certain tuple).
-The tuple is accepted with success in case it was never inserted in the table,
-assuring the replica that the tuple was never processed and sent to next
-operator before, which together with the guarantees provided by the algorithm
-assure exactly once delivery of tuples.
+\forceindent Finally to guarantee that tuples are delivered only exactly
+once, and taking the algorithm descbibed as a starting point, there is the
+need to guarantee that a tuple is never processed twice on the same
+operator. The first thing to remember is that each tuple has a unique Id
+that identifies it's path along the processing chain. Based on that, each
+received tuple on a node is checked by it's id to guarantee that it has
+never been processed, by comparing it's unique id to every tuple record
+stored in the shared tuple record table (hence the possible states for a
+certain tuple).  The tuple is accepted with success in case it was never
+inserted in the table, assuring the replica that the tuple was never
+processed and sent to next operator before, which together with the
+guarantees provided by the algorithm assure exactly once delivery of
+tuples.
 
 %------------------------------------------------------------------------- 
 \Section{Evaluation}
@@ -276,21 +274,23 @@ Qualitative evaluation
 
 Prior to analyzing the used algorithms, we have to acknowledge that the
 solutions aren't perfect but are a step forward from the naive approaches
-that might be picked in this situation. Most of the differences are actually
-?intelligible? when processing small datasets, in which each tuple is small.
-For example in this case there is an advantage of replicating tuples in each
-node after receiving from the operator, considering their sizes might be even
-smaller than the tuple records and there are less steps involved in the
-algorithm. But on the other hand, if we try to scale the tuple size even
-a little bit, then the tuple-replicating approach would scale much worse,
-resulting in huge amounts of exchanged data between replicas of the same
-operator before they can even process the tuples. On the other hand, replicating
-only tuple records scales in a constant way with tuple size (doesn't increase).
-So as analyzed from this feature, one thing to note is that there is no perfect
-solution that applies to every kind of system in a scallable and eficient way.
-A much better compromise is to develop the system according to whatever are
-its needs, and if possible without forgetting the scalability to a real world
-scenario of applying the developed solution.
+that might be picked in this situation. Most of the differences are
+actually ?intelligible? when processing small datasets, in which each
+tuple is small.  For example in this case there is an advantage of
+replicating tuples in each node after receiving from the operator,
+considering their sizes might be even smaller than the tuple records and
+there are less steps involved in the algorithm. But on the other hand, if
+we try to scale the tuple size even a little bit, then the
+tuple-replicating approach would scale much worse, resulting in huge
+amounts of exchanged data between replicas of the same operator before
+they can even process the tuples. On the other hand, replicating only
+tuple records scales in a constant way with tuple size (doesn't increase).
+So as analyzed from this feature, one thing to note is that there is no
+perfect solution that applies to every kind of system in a scallable and
+eficient way.  A much better compromise is to develop the system according
+to whatever are its needs, and if possible without forgetting the
+scalability to a real word scenario of applying the developed solution.
+>>>>>>> d517b09a18d490b9ce160e605ed99d0ff3b4f6d9
 
 %------------------------------------------------------------------------- 
 \Section{Conclusion}
