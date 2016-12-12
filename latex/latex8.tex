@@ -88,7 +88,7 @@ Colleague replicas among themselves have the illusion of being in a ring like to
 If the pinged replica is detected to be down, then the replica can just calculate the following replica's index using the very same rule, and contact it, asking for it to take over the downed replica's spot.
 \begin{figure}[h] 
 	\includegraphics[width=\columnwidth]{fault_detection}
-	\caption{Ordered steps taken when a node processes a tuple}
+	\caption{How colleague replicas ping each other}
 \end{figure}
 
 %------------------------------------------------------------------------- 
@@ -100,30 +100,30 @@ It then repeats the process for it's colleague replicas and the ones of the oper
 
 \begin{figure}[h] 
 	\includegraphics[width=\columnwidth]{take_over}
-	\caption{Ordered steps taken when a node processes a tuple}
+	\caption{Take over prodecure illustrated}
 \end{figure}
 
-There is however a small detail that caused a somewhat meaningful problem. In the case of an operator having only two replicas, and one of them going down, the only remaining replica would substitute the representation of it's colleague with itself, and then effectively start pinging itself. This caused not only some perfformance issues but some other problems.
-In order to fix this efficiently we had to break a small layer of abstraction and add another sctructure to the replicas, a list containing the indexes of the replicas it has taken over. This allows a replica to know whether it would be connecting to itself or not.
+There is however a small detail that caused a somewhat meaningful problem. In the case of an operator having only two replicas, and one of them going down, the only remaining replica would substitute the representation of it's colleague with itself, and then effectively start pinging itself. This caused not only some performance issues besides other problems.
+In order to fix this efficiently we had to break a small layer of abstraction and add another structure to the replicas, a list containing the indexes of the replicas it has taken over. This allows a replica to know whether it would be attempting to connect to itself or not.
 
 After a replica has fully taken over for another one, all other replicas have the illusion of the topology state remaining the same. This is because every method that implies connecting to another replica, obtains the connection through the abstraction layer previously described, so every work load is seamlessly diverted to the new replica.
-Only replicas within the same operator can detect downed replicas. If any other remoting method fails due to the target replica being down, it enters an active wait untill another replica takes over and the method is succesfully carried out. We chose this implementation over the option of any remoting task possibly triggering a take over, due to the possibility of the retrying of the faulting method being faster than the take over process. Fixing this issue would over complicate things, and the simpler implementation as we have now would reveal it self as the faster one.
+Only replicas within the same operator can detect downed replicas. If any other remoting method fails due to the target replica being down, it enters an active wait untill another replica takes over and the method is succesfully carried out. We chose this implementation over the option of any remoting task possibly triggering a take over, due to the possibility of the retrying of the faulting method being faster than the take over process. Fixing this issue would over complicate things, and the simpler implementation as we have now revealed it self as the faster one.
 %------------------------------------------------------------------------- 
 \SubSection{Reinstate Procedure}
 
-The reinstating protocol is simply put, the reverse of the take over process. Once a replica is brought back it goes through the same process of accessing previous, colleague and following operator's replica abstraction holding structures in that respoecting order, and inserting a representation of itself in it's rightful spot.
+The reinstating protocol is simply put, the reverse of the take over process. Once a replica is brought back it goes through the same process of accessing previous, colleague and following operator's replica abstraction holding structures in that respective order, and inserting a representation of itself in it's rightful spot.
 After this, all remote methods are once again routed correctly to the reinstated replica.
 The replica that had taken over for it also has it's index list updated, meaning that the index of the reinstated replica is removed from that list.
 %------------------------------------------------------------------------- 
 \Section{Semantics}
 
-One of the biggest concern in the distributed tuple processing is being
-able to a guarantee a certain semantics associated with the processing of
-a tuple in the presence of system failures, and inevitably the way in
+One of the biggest concerns in distributed tuple processing is being
+able to a guarantee certain semantics associated with the processing of
+a tuple in the presence of system failures, and inevitably the way it
 needs to reconfigure in order to continue functioning properly. This issue
 is inevitably linked to the way that the system does fault tolerance. The
 algorithm used for any semantic guarantee is very simillar, using the same
-data structures and most of the same procedures, We will first explain the
+data structures and most of the same procedures. We will first explain the
 general idea behind the algorithm, then used data structures and the
 algorithm and finally how it used to assure that a tuple is processed at
 most once, at least once and exactly once.
@@ -275,7 +275,7 @@ Qualitative evaluation
 Prior to analyzing the used algorithms, we have to acknowledge that the
 solutions aren't perfect but are a step forward from the naive approaches
 that might be picked in this situation. Most of the differences are
-actually ?intelligible? when processing small datasets, in which each
+actually ?intelligible?(do you mean unintelligible?) when processing small datasets, in which each
 tuple is small.  For example in this case there is an advantage of
 replicating tuples in each node after receiving from the operator,
 considering their sizes might be even smaller than the tuple records and
