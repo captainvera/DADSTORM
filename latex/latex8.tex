@@ -175,56 +175,99 @@ table, if it had already been processed it is not accepted.
 %------------------------------------------------------------------------- 
 \Section{Fault-Tolerance}
 
-Talk about fault-tolerance in a general way
-
-Our fault tolerance algorithm provides the ability to tolerate a downed replica of any operator, as well as the it's recuperation.
-The algorithm we used is possible due to the use of a simple, yet resourceful abstraction mechanism, which the semanthics algorithm will greatly benefit from aswell.
-Each of the replica mantains three sets of of dictionaries, except the first and last operator's replicas. This is because each of the dictionaries holds the correspondence between a replica and the dictionary holder's view of it.
-One dictionary abstracts all of the colleague replicas of the holder (replicas of the same operator as itself), another distinct dictionary abstracts the replicas of the above operator, and again for the one below.
-So every replica of every operator has the ability to establish a connection with what they think is every replica above and below them, as well as their colleagues.
+To make sure that the system is always kept in a working state, it needs
+to be able to recover from faults within the fault model and recover to a
+working network configuration. Our fault tolerance algorithm provides the
+ability to tolerate a downed replica of any operator, as well as proceed
+to it's recuperation. The algorithm we used is possible due to the use of
+a simple, yet resourceful abstraction mechanism, which the semantics
+algorithm will also greatly benefit from aswell. Each of the replica
+mantains three sets of of dictionaries on which a replica is associated to
+a number (initally the replica number), except on the first and last
+operator's replicas. This is because each of the dictionaries holds the
+correspondence between a replica and the dictionary holder's view of it.
+One dictionary abstracts all of the colleague replicas of the holder
+(replicas of the same operator as itself), another distinct dictionary
+abstracts the replicas of the above operator, and again for the one below.
+So every replica of every operator has the ability to establish a
+connection with what they think is every replica above and below them, as
+well as their colleagues.
 
 %------------------------------------------------------------------------- 
 \SubSection{Fault Detection}
 
-Going into more detail on how a downed replica can be detected.
-Colleague replicas among themselves have the illusion of being in a ring like topology. Each replica periodically pings the following colleague like ilustrated in fig.X (FIGURA DE REPLICAS EM CIRCULO COM INDEXES E SETAS DE PING). A replica can efficiently know what replica it preceeds. It knows it's own replica index (i)therefor it knows the index of the replica it has to ping (ping i), by applying the following rule: ping i = (i + 1) \% number of replicas.
-If the pinged replica is detected to be down, then the replica can just calculate the following replica's index using the very same rule, and contact it, asking for it to take over the downed replica's spot.
-\begin{figure}[h] 
-	\includegraphics[width=\columnwidth]{fault_detection}
-	\caption{How colleague replicas ping each other}
-\end{figure}
+\begin{figure}[h] \includegraphics[width=\columnwidth]{fault_detection}
+	\caption{How colleague replicas ping each other} \end{figure}
+
+Going into more detail on how a downed replica can be detected.  Colleague
+replicas among themselves have the illusion of being in a ring like
+topology. Each replica periodically pings the following colleague like
+ilustrated in Figure. 1. A replica can efficiently know what replica it
+preceeds. It knows it's own replica index (i) therefore it knows the index
+of the replica it has to ping: ping(i), by applying the following rule:
+\[ping(i) = (i + 1)\ \%\ number\ of\ replicas\] If the pinged replica is
+detected to be down, then the replica can just calculate the following
+replica's index using the very same rule, and contact it, asking for it to
+take over the downed replica's spot. 
 
 %------------------------------------------------------------------------- 
 \SubSection{Take Over Procedure}
 
-The replica taking over goes through the 3 sets of replica holding abstractions aforementioned.
-Firstly it iterates over the the replica holding abstractions corresponding to the operator above it, and for each one, it substitues the place of the replica detected as downed with a representation of itself. It literally takes over it's spot, so every command that would be aimed at the downed replica, is routed to the one that took over it's functions.
-It then repeats the process for it's colleague replicas and the ones of the operator below it. (FIGURA COM SETAS E O CRLH)
+The replica taking over goes through the 3 sets of replica holding
+abstractions aforementioned.  Firstly it iterates over the the replica
+holding abstractions corresponding to the operator above it, and for each
+one, it substitues the place of the replica detected as downed with a
+representation of itself. It literally takes over it's spot, so every
+command that would be aimed at the downed replica, is routed to the one
+that took over it's functions.  It then repeats the process for it's
+colleague replicas and the ones of the operator below it. 
 
-\begin{figure}[h] 
-	\includegraphics[width=\columnwidth]{take_over}
-	\caption{Take over prodecure illustrated}
-\end{figure}
+\begin{figure}[h] \includegraphics[width=\columnwidth]{take_over}
+	\caption{Take over prodecure illustrated} \end{figure}
 
-There is however a small detail that caused a somewhat meaningful problem. In the case of an operator having only two replicas, and one of them going down, the only remaining replica would substitute the representation of it's colleague with itself, and then effectively start pinging itself. This caused not only some performance issues besides other problems.
-In order to fix this efficiently we had to break a small layer of abstraction and add another structure to the replicas, a list containing the indexes of the replicas it has taken over. This allows a replica to know whether it would be attempting to connect to itself or not.
+There is however a small detail that caused a somewhat meaningful problem.
+In the case of an operator having only two replicas, and one of them going
+down, the only remaining replica would substitute the representation of
+it's colleague with itself, and then effectively start pinging itself.
+This caused not only some performance issues besides other problems.  In
+order to fix this efficiently we had to break a small layer of abstraction
+and add another structure to the replicas, a list containing the indexes
+of the replicas it has taken over. This allows a replica to know whether
+it would be attempting to connect to itself or not.
 
-After a replica has fully taken over for another one, all other replicas have the illusion of the topology state remaining the same. This is because every method that implies connecting to another replica, obtains the connection through the abstraction layer previously described, so every work load is seamlessly diverted to the new replica.
-Only replicas within the same operator can detect downed replicas. If any other remoting method fails due to the target replica being down, it enters an active wait untill another replica takes over and the method is succesfully carried out. We chose this implementation over the option of any remoting task possibly triggering a take over, due to the possibility of the retrying of the faulting method being faster than the take over process. Fixing this issue would over complicate things, and the simpler implementation as we have now revealed it self as the faster one.
+After a replica has fully taken over for another one, all other replicas
+have the illusion of the topology state remaining the same. This is
+because every method that implies connecting to another replica, obtains
+the connection through the abstraction layer previously described, so
+every work load is seamlessly diverted to the new replica.  Only replicas
+within the same operator can detect downed replicas. If any other remoting
+method fails due to the target replica being down, it enters an active
+wait untill another replica takes over and the method is succesfully
+carried out. We chose this implementation over the option of any remoting
+task possibly triggering a take over, due to the possibility of the
+retrying of the faulting method being faster than the take over process.
+Fixing this issue would over complicate things, and the simpler
+implementation as we have now revealed it self as the faster one.
 %------------------------------------------------------------------------- 
 \SubSection{Reinstate Procedure}
 
-The reinstating protocol is simply put, the reverse of the take over process. Once a replica is brought back it goes through the same process of accessing previous, colleague and following operator's replica abstraction holding structures in that respective order, and inserting a representation of itself in it's rightful spot.
-After this, all remote methods are once again routed correctly to the reinstated replica.
-The replica that had taken over for it also has it's index list updated, meaning that the index of the reinstated replica is removed from that list.
+The reinstating protocol is simply put, the reverse of the take over
+process. Once a replica is brought back it goes through the same process
+of accessing previous, colleague and following operator's replica
+abstraction holding structures in that respective order, and inserting a
+representation of itself in it's rightful spot.  After this, all remote
+methods are once again routed correctly to the reinstated replica.  The
+replica that had taken over for it also has it's index list updated,
+meaning that the index of the reinstated replica is removed from that
+list.
 %------------------------------------------------------------------------- 
 \Section{Semantics}
 
-One of the biggest concerns in distributed tuple processing is being
-able to a guarantee certain semantics associated with the processing of
-a tuple in the presence of system failures, and inevitably the way it
-needs to reconfigure in order to continue functioning properly. This issue
-is inevitably linked to the way that the system does fault tolerance. The
+One of the biggest concerns in distributed tuple processing is being able
+to a guarantee certain semantics associated with the processing of a tuple
+in the presence of system failures, and inevitably the way it needs to
+reconfigure in order to continue functioning properly. This issue is
+inevitably linked to the way that the system does fault tolerance. The
 algorithm used for any semantic guarantee is very simillar, using the same
 data structures and most of the same procedures. We will first explain the
 general idea behind the algorithm, then used data structures and the
@@ -360,12 +403,60 @@ tuples.
 %------------------------------------------------------------------------- 
 \Section{Evaluation}
 
-Evaluation of the solution
+In order to proper understand the effectiveness of the developed solution
+it is necessary to understand the performance implications of the used
+algorithm and how it compares with other possible solutions. Firstly we
+will analyze the used solution from a theoretical standpoint and compare
+it with the previously mentioned naive solution. Then we will test a few
+measures and compare them to the theoretical results in order to provide
+some confirmation.
 
 %------------------------------------------------------------------------- 
-\SubSection{Quantitative}
+\SubSection{Analysis}
 
-Quantitive evaluation
+To simplify the process of creating a model that fits the developed system
+we will consider a few assumptions that hopefully won't distort the
+obtained results by much: \begin{itemize} \item The considered system is
+			only comprised of simple operators where one tuple can only
+		originate another tuple, without stream divergences; \item The system
+			can be simplified by some measures where $R$ is the average
+			replication factor of each operator, $O$ is the number of operators
+		and $T$ is the average size of a tuple being sent; \item Tuple Records
+			have have a constant size of 64 bits for the unique id plus 32 bits
+			to identify the operator and replica and 1 bit for the state.  This
+			value is represented by $TR \approx 128\ bits$.  \end{itemize} In
+	this case the system consists of an acyclic (forward) graph where we can
+	attribute a weight to each transition depending on what measure we're
+	analyzing.
+
+Let's start by considering the amount of data transfered per tuple sent:
+For each tuple received by a replica it sends a tuple record to every
+other replica, so $(R-1)\times TR$. There is also a purge message that
+contains only a unique id, which we will aproximate to the Tuple Record
+(TR) size. Similarly the confirmation to the previous contains the id. All
+things considered the total amount of data for each tuple received per
+replica for all the operators is 
+
+%\[ (R - 1 + 1 + 1) \times TR \times O \Rightarrow O(R \times TR \times O)
+%\\ TR\ is\ constant\ \Rightarrow O(R \times O) \]
+
+\begin{eqnarray*} &(R - 1 + 1 + 1) \times TR \times O \Rightarrow O(R
+	\times TR \times O) \\ &TR\ is\ constant\ \Rightarrow O(R \times O)
+\end{eqnarray*}
+
+Comparatively a naive solution that receives a tuple on a replica and
+replicates it through all the replicas (removing the necessity for forward
+and backwards confirmation) would require 
+
+\[ (R-1)\times T \times O \Rightarrow O(R \times T \times O)\]
+
+The difference of both approaches being that our proposed solution scales
+with the size of a tuple record, $TR$ which is a constant value, while the
+naive approach will scale with the tuple size as well $T$. For increasing
+tuple sizes the difference in data that needs to be exchanged between
+replicas for each tuple is noticeably smaller as we expect to confirm in
+the pratical results. In this sense, we can start to understand the
+performance advantages presented by our solution when $T \gg TR$.
 
 %------------------------------------------------------------------------- 
 \SubSection{Qualitative}
@@ -379,22 +470,39 @@ Prior to analyzing the used algorithms, we have to acknowledge that the
 solutions aren't perfect but are a step forward from the naive approaches
 that might be picked in this situation. Most of the differences are
 actually unintelligible when processing small datasets, in which each
-tuple is small.  For example in this case there is an advantage of
-replicating tuples in each node after receiving from the operator,
-considering their sizes might be even smaller than the tuple records and
-there are less steps involved in the algorithm. But on the other hand, if
-we try to scale the tuple size even a little bit, the
-tuple-replicating approach would scale much worse, resulting in huge
-amounts of exchanged data between replicas of the same operator before
-they can even process the tuples. On the other hand, replicating only
-tuple records scales in a constant way with tuple size (doesn't increase).
-So as analyzed from this feature, one thing to note is that there is no
-perfect solution that applies to every kind of system in a scallable and
-eficient way.  A much better compromise is to develop the system according
-to whatever are its needs, and if possible without forgetting the
-scalability to a real word scenario of applying the developed solution.
-As far as fault detection goes, we think that other topologies can be adopted besides our ring-like one. It would really come down to the real life application of the system. A possibly good heuristic could be how far replicas are from each other, so the whole operator ping cycle (all replicas get pinged) is made as fast as possible. With different topologies different methods of picking what replica takes over are necessary. If the topology is a tree-like, then choosing a candidate becomes much harder. Some other things can be taken into account when picking a take over candidate, for example, work load metrics can be shared with each "are you alive" in order to pick which replica would take the extra load better. Another even more complex possible solution is to have more than one replica assigned to taking over the downed replica's work load. Once again it all depends on the real life application scenario.
-Regarding the take-over and reinstating methods, we support the opinion that there aren't any meaningful variations of our adopted solution that can be done taking into account our network topology.
+tuple is small. 
+
+For example in this case there is an advantage of replicating tuples in
+each node after receiving from the operator, considering their sizes might
+be even smaller than the tuple records and there are less steps involved
+in the algorithm. But on the other hand, if we try to scale the tuple size
+even a litle bit, then the tuple-replicating approach would scale much
+worse, resulting in huge amounts of exchanged data between replicas of the
+same operator before they can even process the tuples. On the other hand,
+replicating only tuple records scales in a constant way with tuple size
+(doesn't increase).  So as analyzed from this feature, one thing to note
+is that there is no perfect solution that applies to every kind of system
+in a scallable and eficient way.  A much better compromise is to develop
+the system according to whatever are its needs, and if possible without
+forgetting the scalability to a real word scenario of applying the
+developed solution.
+
+As far as fault detection goes, we think that other topologies can be
+adopted besides our ring-like one. It would really come down to the real
+life application of the system. A possibly good heuristic could be how far
+replicas are from each other, so the whole operator ping cycle (all
+replicas get pinged) is made as fast as possible. With different
+topologies different methods of picking what replica takes over are
+necessary. If the topology is a tree-like, then choosing a candidate
+becomes much harder. Some other things can be taken into account when
+picking a take over candidate, for example, work load metrics can be
+shared with each "are you alive" in order to pick which replica would take
+the extra load better. Another even more complex possible solution is to
+have more than one replica assigned to taking over the downed replica's
+work load. Once again it all depends on the real life application scenario
+Regarding the take-over and reinstating methods, we support the opinion
+that there aren't any meaningful variations of our adopted solution that
+can be done taking into account our network topology.
 
 %------------------------------------------------------------------------- 
 \Section{Conclusion}
@@ -402,150 +510,150 @@ Regarding the take-over and reinstating methods, we support the opinion that the
 Evaluation of the solution
 
 %------------------------------------------------------------------------- 
-\Section{Style Guidelines}
-
-Please follow the steps outlined below when submitting your manuscript to
-the IEEE Computer Society Press. Note there have been some changes to the
-measurements from previous instructions. 
-
-%------------------------------------------------------------------------- 
-\SubSection{Margins and page numbering}
-
-All printed material, including text, illustrations, and charts, must be
-kept within a print area 6-7/8 inches (17.5 cm) wide by 8-7/8 inches
-(22.54 cm) high.  Do not write or print anything outside the print area.
-Number your pages lightly, in pencil, on the upper right-hand corners of
-the BACKS of the pages (for example, 1/10, 2/10, or 1 of 10, 2 of 10, and
-so forth). Please do not write on the fronts of the pages, nor on the
-lower halves of the backs of the pages.
-
-
-%------------------------------------------------------------------------ 
-\SubSection{Formatting your paper}
-
-All text must be in a two-column format. The total allowable width of the
-text area is 6-7/8 inches (17.5 cm) wide by 8-7/8 inches (22.54 cm) high.
-Columns are to be 3-1/4 inches (8.25 cm) wide, with a 5/16 inch (0.8 cm)
-space between them.  The main title (on the first page) should begin 1.0
-inch (2.54 cm) from the top edge of the page. The second and following
-pages should begin 1.0 inch (2.54 cm) from the top edge. On all pages, the
-bottom margin should be 1-1/8 inches (2.86 cm) from the bottom edge of the
-page for $8.5 \times 11$-inch paper; for A4 paper, approximately 1-5/8
-inches (4.13 cm) from the bottom edge of the page.
-
-%------------------------------------------------------------------------- 
-\SubSection{Type-style and fonts}
-
-Wherever Times is specified, Times Roman may also be used.  If neither is
-available on your word processor, please use the font closest in
-appearance to Times that you have access to.
-
-MAIN TITLE. Center the title 1-3/8 inches (3.49 cm) from the top edge of
-the first page. The title should be in Times 14-point, boldface type.
-Capitalize the first letter of nouns, pronouns, verbs, adjectives, and
-adverbs; do not capitalize articles, coordinate conjunctions, or
-prepositions (unless the title begins with such a word).  Leave two blank
-lines after the title.
-
-AUTHOR NAME(s) and AFFILIATION(s) are to be centered beneath the title and
-printed in Times 12-point, non-boldface type.  This information is to be
-followed by two blank lines.
-
-The ABSTRACT and MAIN TEXT are to be in a two-column format. 
-
-MAIN TEXT. Type main text in 10-point Times, single-spaced.  Do NOT use
-double-spacing. All paragraphs should be indented 1 pica (approx. 1/6 inch
-or 0.422 cm). Make sure your text is fully justified---that is, flush left
-and flush right.  Please do not place any additional blank lines between
-paragraphs.  Figure and table captions should be 10-point Helvetica
-boldface type as in \begin{figure}[h] \caption{Example of caption.}
-\end{figure}
-
-\noindent Long captions should be set as in \begin{figure}[h]
-	\caption{Example of long caption requiring more than one line. It is not
-	typed centered but aligned on both sides and indented with an additional
-margin on both sides of 1~pica.} \end{figure}
-
-\noindent Callouts should be 9-point Helvetica, non-boldface type.
-Initially capitalize only the first word of section titles and first-,
-second-, and third-order headings.
-
-FIRST-ORDER HEADINGS. (For example, {\large \bf 1.  Introduction}) should
-be Times 12-point boldface, initially capitalized, flush left, with one
-blank line before, and one blank line after.
-
-SECOND-ORDER HEADINGS. (For example, {\elvbf 1.1. Database elements})
-should be Times 11-point boldface, initially capitalized, flush left, with
-one blank line before, and one after. If you require a third-order heading
-(we discourage it), use 10-point Times, boldface, initially capitalized,
-flush left, preceded by one blank line, followed by a period and your text
-on the same line.
-
-%------------------------------------------------------------------------- 
-\SubSection{Footnotes}
-
-Please use footnotes sparingly% \footnote {% Or, better still, try to
-	avoid footnotes altogether.  To help your readers, avoid using footnotes
-	altogether and include necessary peripheral observations in the text
-	(within parentheses, if you prefer, as in this sentence). and place them
-	at the bottom of the column on the page on which they are referenced.
-	Use Times 8-point type, single-spaced.
-
-
-%------------------------------------------------------------------------- 
-\SubSection{References}
-
-List and number all bibliographical references in 9-point Times,
-single-spaced, at the end of your paper. When referenced in the text,
-enclose the citation number in square brackets, for example~\cite{ex1}.
-Where appropriate, include the name(s) of editors of referenced books.
-
-%------------------------------------------------------------------------- 
-\SubSection{Illustrations, graphs, and photographs}
-
-All graphics should be centered. Your artwork must be in place in the
-article (preferably printed as part of the text rather than pasted up).
-If you are using photographs and are able to have halftones made at a
-print shop, use a 100- or 110-line screen. If you must use plain photos,
-they must be pasted onto your manuscript. Use rubber cement to affix the
-images in place. Black and white, clear, glossy-finish photos are
-preferable to color. Supply the best quality photographs and illustrations
-possible. Penciled lines and very fine lines do not reproduce well.
-Remember, the quality of the book cannot be better than the originals
-provided. Do NOT use tape on your pages!
-
-%------------------------------------------------------------------------- 
-\SubSection{Color}
-
-The use of color on interior pages (that is, pages other than the cover)
-is prohibitively expensive. We publish interior pages in color only when
-it is specifically requested and budgeted for by the conference
-organizers. DO NOT SUBMIT COLOR IMAGES IN YOUR PAPERS UNLESS SPECIFICALLY
-INSTRUCTED TO DO SO.
-
-%------------------------------------------------------------------------- 
-\SubSection{Symbols}
-
-If your word processor or typewriter cannot produce Greek letters,
-mathematical symbols, or other graphical elements, please use
-pressure-sensitive (self-adhesive) rub-on symbols or letters (available in
-most stationery stores, art stores, or graphics shops).
-
-%------------------------------------------------------------------------ 
-\SubSection{Copyright forms}
-
-You must include your signed IEEE copyright release form when you submit
-your finished paper. We MUST have this form before your paper can be
-published in the proceedings.
-
-%------------------------------------------------------------------------- 
-\SubSection{Conclusions}
-
-Please direct any questions to the production editor in charge of these
-proceedings at the IEEE Computer Society Press: Phone (714) 821-8380, or
-Fax (714) 761-1784.
-
-%------------------------------------------------------------------------- 
-\nocite{ex1,ex2} \bibliographystyle{latex8} \bibliography{latex8}
+%\Section{Style Guidelines}
+%
+%Please follow the steps outlined below when submitting your manuscript to
+%the IEEE Computer Society Press. Note there have been some changes to the
+%measurements from previous instructions. 
+%
+%%------------------------------------------------------------------------- 
+%\SubSection{Margins and page numbering}
+%
+%All printed material, including text, illustrations, and charts, must be
+%kept within a print area 6-7/8 inches (17.5 cm) wide by 8-7/8 inches
+%(22.54 cm) high.  Do not write or print anything outside the print area.
+%Number your pages lightly, in pencil, on the upper right-hand corners of
+%the BACKS of the pages (for example, 1/10, 2/10, or 1 of 10, 2 of 10, and
+%so forth). Please do not write on the fronts of the pages, nor on the
+%lower halves of the backs of the pages.
+%
+%
+%%------------------------------------------------------------------------ 
+%\SubSection{Formatting your paper}
+%
+%All text must be in a two-column format. The total allowable width of the
+%text area is 6-7/8 inches (17.5 cm) wide by 8-7/8 inches (22.54 cm) high.
+%Columns are to be 3-1/4 inches (8.25 cm) wide, with a 5/16 inch (0.8 cm)
+%space between them.  The main title (on the first page) should begin 1.0
+%inch (2.54 cm) from the top edge of the page. The second and following
+%pages should begin 1.0 inch (2.54 cm) from the top edge. On all pages, the
+%bottom margin should be 1-1/8 inches (2.86 cm) from the bottom edge of the
+%page for $8.5 \times 11$-inch paper; for A4 paper, approximately 1-5/8
+%inches (4.13 cm) from the bottom edge of the page.
+%
+%%------------------------------------------------------------------------- 
+%\SubSection{Type-style and fonts}
+%
+%Wherever Times is specified, Times Roman may also be used.  If neither is
+%available on your word processor, please use the font closest in
+%appearance to Times that you have access to.
+%
+%MAIN TITLE. Center the title 1-3/8 inches (3.49 cm) from the top edge of
+%the first page. The title should be in Times 14-point, boldface type.
+%Capitalize the first letter of nouns, pronouns, verbs, adjectives, and
+%adverbs; do not capitalize articles, coordinate conjunctions, or
+%prepositions (unless the title begins with such a word).  Leave two blank
+%lines after the title.
+%
+%AUTHOR NAME(s) and AFFILIATION(s) are to be centered beneath the title and
+%printed in Times 12-point, non-boldface type.  This information is to be
+%followed by two blank lines.
+%
+%The ABSTRACT and MAIN TEXT are to be in a two-column format. 
+%
+%MAIN TEXT. Type main text in 10-point Times, single-spaced.  Do NOT use
+%double-spacing. All paragraphs should be indented 1 pica (approx. 1/6 inch
+%or 0.422 cm). Make sure your text is fully justified---that is, flush left
+%and flush right.  Please do not place any additional blank lines between
+%paragraphs.  Figure and table captions should be 10-point Helvetica
+%boldface type as in \begin{figure}[h] \caption{Example of caption.}
+%\end{figure}
+%
+%\noindent Long captions should be set as in \begin{figure}[h]
+%	\caption{Example of long caption requiring more than one line. It is not
+%	typed centered but aligned on both sides and indented with an additional
+%margin on both sides of 1~pica.} \end{figure}
+%
+%\noindent Callouts should be 9-point Helvetica, non-boldface type.
+%Initially capitalize only the first word of section titles and first-,
+%second-, and third-order headings.
+%
+%FIRST-ORDER HEADINGS. (For example, {\large \bf 1.  Introduction}) should
+%be Times 12-point boldface, initially capitalized, flush left, with one
+%blank line before, and one blank line after.
+%
+%SECOND-ORDER HEADINGS. (For example, {\elvbf 1.1. Database elements})
+%should be Times 11-point boldface, initially capitalized, flush left, with
+%one blank line before, and one after. If you require a third-order heading
+%(we discourage it), use 10-point Times, boldface, initially capitalized,
+%flush left, preceded by one blank line, followed by a period and your text
+%on the same line.
+%
+%%------------------------------------------------------------------------- 
+%\SubSection{Footnotes}
+%
+%Please use footnotes sparingly% \footnote {% Or, better still, try to
+%	avoid footnotes altogether.  To help your readers, avoid using footnotes
+%	altogether and include necessary peripheral observations in the text
+%	(within parentheses, if you prefer, as in this sentence). and place them
+%	at the bottom of the column on the page on which they are referenced.
+%	Use Times 8-point type, single-spaced.
+%
+%
+%%------------------------------------------------------------------------- 
+%\SubSection{References}
+%
+%List and number all bibliographical references in 9-point Times,
+%single-spaced, at the end of your paper. When referenced in the text,
+%enclose the citation number in square brackets, for example~\cite{ex1}.
+%Where appropriate, include the name(s) of editors of referenced books.
+%
+%%------------------------------------------------------------------------- 
+%\SubSection{Illustrations, graphs, and photographs}
+%
+%All graphics should be centered. Your artwork must be in place in the
+%article (preferably printed as part of the text rather than pasted up).
+%If you are using photographs and are able to have halftones made at a
+%print shop, use a 100- or 110-line screen. If you must use plain photos,
+%they must be pasted onto your manuscript. Use rubber cement to affix the
+%images in place. Black and white, clear, glossy-finish photos are
+%preferable to color. Supply the best quality photographs and illustrations
+%possible. Penciled lines and very fine lines do not reproduce well.
+%Remember, the quality of the book cannot be better than the originals
+%provided. Do NOT use tape on your pages!
+%
+%%------------------------------------------------------------------------- 
+%\SubSection{Color}
+%
+%The use of color on interior pages (that is, pages other than the cover)
+%is prohibitively expensive. We publish interior pages in color only when
+%it is specifically requested and budgeted for by the conference
+%organizers. DO NOT SUBMIT COLOR IMAGES IN YOUR PAPERS UNLESS SPECIFICALLY
+%INSTRUCTED TO DO SO.
+%
+%%------------------------------------------------------------------------- 
+%\SubSection{Symbols}
+%
+%If your word processor or typewriter cannot produce Greek letters,
+%mathematical symbols, or other graphical elements, please use
+%pressure-sensitive (self-adhesive) rub-on symbols or letters (available in
+%most stationery stores, art stores, or graphics shops).
+%
+%%------------------------------------------------------------------------ 
+%\SubSection{Copyright forms}
+%
+%You must include your signed IEEE copyright release form when you submit
+%your finished paper. We MUST have this form before your paper can be
+%published in the proceedings.
+%
+%%------------------------------------------------------------------------- 
+%\SubSection{Conclusions}
+%
+%Please direct any questions to the production editor in charge of these
+%proceedings at the IEEE Computer Society Press: Phone (714) 821-8380, or
+%Fax (714) 761-1784.
+%
+%%------------------------------------------------------------------------- 
+%\nocite{ex1,ex2} \bibliographystyle{latex8} \bibliography{latex8}
 
 \end{document}
