@@ -302,12 +302,57 @@ tuples.
 %------------------------------------------------------------------------- 
 \Section{Evaluation}
 
-In order to provide proper  
+In order to proper understand the effectiveness of the developed solution
+it is necessary to understand the performance implications of the used
+algorithm and how it compares with other possible solutions. Firstly we
+will analyze the used solution from a theoretical standpoint and compare
+it with the previously mentioned naive solution. Then we will test a few measures
+and compare them to the theoretical results in order to provide some
+confirmation.
 
 %------------------------------------------------------------------------- 
-\SubSection{Quantitative}
+\SubSection{Analysis}
 
-Quantitive evaluation
+To simplify the process of developing a model that fits the developed
+system we will consider a few assumptions that hopefully won't distort the
+obtain results by much:
+\begin{itemize}
+	\item The considered system is only comprised of simple operators
+		where one tuple can only originate another tuple, without stream
+		divergences
+	\item The system can be simplified by some measures where $R$ is the
+		average replication factor of each operator, and $T$ is the average size
+		of a tuple being sent
+	\item Tuple Records have have a constant size of 64 bits for the unique id plus
+		32 bits to identify the operator and replica and 1 bit for the state.
+		This value is represented by $TR \approx 128\ bits$
+\end{itemize}
+In this case the system consists of an acyclic (forward) graph where we can attribute a
+weight to each transition depending on what measure we're analyzing.
+
+Lets start by considering the amount of data transfered per tuple sent:
+For each tuple received by a replica it sends a tuple record to every
+other replica, so $(R-1)\times TR$. There is also a purge message that
+contains only a unique id, which we will aproximate to the Tuple Record
+(TR) size. The confirmation to the previous node also only contains the
+id. All things considered the total amount of data for each tuple received
+per replica is around 
+
+\[ (R - 1 + 1 + 1) \times TR \Rightarrow O(R \times TR) \]
+
+Comparatively a naive solution that receives a tuple on a replica and
+replicates it through all the replicas (removing the necessity for forward
+and backwards confirmation) would require 
+
+\[ (R-1)\times T \Rightarrow O(R \times T)\]
+
+The difference of both approaches being that our proposed solution scales
+on with the Average Replication Factor $R$, and $TR$ which is a constant
+value, while the naive approach will scale with $R$ and tuple size
+$T$, both scaling factors. In this sense, we can start to understand the
+performance advantages presented by our solution when $T \gg TR$.
+
+
 
 %------------------------------------------------------------------------- 
 \SubSection{Qualitative}
@@ -335,7 +380,6 @@ perfect solution that applies to every kind of system in a scallable and
 eficient way.  A much better compromise is to develop the system according
 to whatever are its needs, and if possible without forgetting the
 scalability to a real word scenario of applying the developed solution.
->>>>>>> d517b09a18d490b9ce160e605ed99d0ff3b4f6d9
 
 %------------------------------------------------------------------------- 
 \Section{Conclusion}
