@@ -13,6 +13,8 @@
 
 %\documentstyle[times,art10,twocolumn,latex8]{article}
 
+\newcommand{\forceindent}{\leavevmode{\parindent=1em\indent}}
+
 %-------------------------------------------------------------------------
 %take the % away on next line to produce the final
 %camera-ready version 
@@ -187,7 +189,7 @@ number of nodes where a tuple is kept before it is delivered.
 %------------------------------------------------------------------------- 
 \subsubsection{At-Most-Once}
 
-To assure that a tuple is processed at most once, a system must only send
+\forceindent To assure that a tuple is processed at most once, a system must only send
 any tuple once, indepent of failure. Since a configuration for this system
 is dependent on being an acyclic graph, the only guarantee we need to
 provide is that there isn't any kind of mechanism to resend tuples in case
@@ -205,13 +207,13 @@ replica, which in case of not getting a response, will just drop the tuple.
 %------------------------------------------------------------------------- 
 \subsubsection{At-Least-Once}
 
-The algorithm previously basicaly accomplishes at least once
+\forceindent The algorithm previously basicaly accomplishes at least once
 delivery by itself, without the need of any changes. 
 
 %------------------------------------------------------------------------- 
 \subsubsection{Exactly-Once}
 
-Finally to guarantee that tuples are delivered only exactly once, and taking
+\forceindent Finally to guarantee that tuples are delivered only exactly once, and taking
 the algorithm descbibed as a starting point, there is the need to guarantee
 that a tuple is never processed twice on the same operator. The first thing
 to remember is that each tuple has a unique Id that identifies it's path
