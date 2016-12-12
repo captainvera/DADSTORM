@@ -214,13 +214,15 @@ take over the downed replica's spot.
 \SubSection{Take Over Procedure}
 
 The replica taking over goes through the 3 sets of replica holding
-abstractions aforementioned.  Firstly it iterates over the the replica
+abstractions aforementioned. Firstly it iterates over the the replica
 holding abstractions corresponding to the operator above it, and for each
 one, it substitues the place of the replica detected as downed with a
 representation of itself. It literally takes over it's spot, so every
 command that would be aimed at the downed replica, is routed to the one
-that took over it's functions.  It then repeats the process for it's
-colleague replicas and the ones of the operator below it. 
+that took over it's functions. It then repeats the process for it's
+colleague replicas and the ones of the operator below it, as illustrated
+in Figure 2. where Replica 3 from the operator OPk takes over another
+failling replica reconfiguring the network.
 
 \begin{figure}[h] \includegraphics[width=\columnwidth]{take_over}
 	\caption{Take over prodecure illustrated} \end{figure}
@@ -329,20 +331,21 @@ processed by that replica.
 \begin{figure}[h] \includegraphics[width=\columnwidth]{semantics}
 	\caption{Ordered steps taken when a node processes a tuple} \end{figure}
 
-The ordered steps represented in figure 1 show most of the necessary
+The ordered steps represented in Figure 3. show most of the necessary
 procedures executed every time a tuple is received, to keep the data
 structures synchronized in order to allow a proper recovery when a node
-fails. When a node receives a tuple (1) the first thing it must do is
-insert it into it's delivery table (2) and it's shared tuple record table
-(3). The node then synchronizes every table with other replicas shared
-tables (4) and finnaly processes the tuple, sending it afterwards (5).
-After the tuple is sent and confirmation is received (6) the node will
-first issue the deletion of the tuple record of every other shared table
-and purge its own shared table of the same tuple (7). Finally it will warn
+fails. When a node receives a tuple (1) it delivers the confirmation of receiving
+it to the previous node (2). The next thing it must do is
+insert it into it's delivery table (3) and it's shared tuple record table
+(4). The node then synchronizes every table with the other replicas shared
+tables (5) and finally processes the tuple, sending it afterwards (6).
+After the tuple is sent and confirmation is received (7) the node will
+issue the purging of the tuple record of every other shared table
+and purge its own shared table of the same tuple record (8). Finally it will warn
 the replica which the tuple originated from that it can finally delete it
 from its delivery table (8) since it was already received by the forward
 node. This information is used whenever a node takes over another failling
-node. It scans its shared table looking for tuple records of the dead node
+node. To recover from a dead node, it scans it's shared table looking for tuple records of the dead node
 and for each record it finds, it requests the tuple to the replica that
 the tuple originated from. Finally that tuple is processed and sent to the
 following node, by the same procedures explained before, as if a new tuple
@@ -356,8 +359,6 @@ is delivered.
 
 %------------------------------------------------------------------------- 
 \SubSection{Differences for each guarantee}
-
-
 
 %------------------------------------------------------------------------- 
 \subsubsection{At-Most-Once}
@@ -464,7 +465,7 @@ performance advantages presented by our solution when $T \gg TR$.
 Qualitative evaluation
 
 %------------------------------------------------------------------------- 
-\Section{Discussion}
+\Section{Conclusion}
 
 Prior to analyzing the used algorithms, we have to acknowledge that the
 solutions aren't perfect but are a step forward from the naive approaches
@@ -503,11 +504,6 @@ work load. Once again it all depends on the real life application scenario
 Regarding the take-over and reinstating methods, we support the opinion
 that there aren't any meaningful variations of our adopted solution that
 can be done taking into account our network topology.
-
-%------------------------------------------------------------------------- 
-\Section{Conclusion}
-
-Evaluation of the solution
 
 %------------------------------------------------------------------------- 
 %\Section{Style Guidelines}
