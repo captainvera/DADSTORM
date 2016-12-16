@@ -243,9 +243,9 @@ namespace DADSTORM
                         logger.writeLine("Interval command");
                         //IntervalAsyncDelegate intervalDel = new IntervalAsyncDelegate(rep.interval);
                         //IAsyncResult remAr = intervalDel.BeginInvoke(time, Puppetmaster.IntervalAsyncCallback, null);
-                        //rep.interval(time);
-                        Replica replica = getReplica(oper.address[0]);
-                        int i  = replica.interval(time);
+                        int i = rep.interval(time);
+                        //Replica replica = getReplica(oper.address[0]);
+                        //int i  = replica.interval(time);
                         logger.writeLine("Got response: " + i);
                     }
                     catch (System.Net.Sockets.SocketException e)
@@ -371,22 +371,22 @@ namespace DADSTORM
 
         public void writeLine(string str, string id, params object[] args)
         {
-            Log.writeLine(str, id, args);
+            log.writeLine(str, args);
         }
 
         public void write(string str, string id, params object[] args)
         {
-            Log.write(str, id, args);
+            log.write(str, args);
         }
 
         public void info(string str, string id, params object[] args)
         {
-            Log.info(str, id, args);
+            log.info(str, args);
         }
 
         public void debug(string str, string id, params object[] args)
         {
-            Log.debug(str, id, args);
+            log.debug(str, args);
         }
 
         override public object InitializeLifetimeService()

@@ -235,4 +235,70 @@ namespace DADSTORM
             base._debug(s, args);
         }
     }
+
+    public class FileLogger : ILogger
+    {
+
+        protected string id;
+        protected string file;
+        protected int level;
+
+        public FileLogger(string _id, string file)
+        {
+            id = _id;
+            //FIXME::XXX -> get log level from constructor or somewhere else
+            level = Config.logLevel;
+            this.file = file;
+        }
+
+        public void writeLine(string s, params object[] args)
+        {
+            _writeLine(s, args);
+        }
+
+        public void write(string s, params object[] args)
+        {
+            _write(s, args);
+        }
+
+        public void info(string s, params object[] args)
+        {
+            if (level > 0)
+                _info(s, args);
+        }
+
+        public void debug(string s, params object[] args)
+        {
+            if (level > 1)
+                _debug(s, args);
+        }
+
+        protected virtual void _write(string s, params object[] args)
+        {
+            Console.Write("[" + id + "] " + String.Format(s, args));
+
+            System.IO.File.WriteAllText(file, "[" + id + "] " + String.Format(s, args));
+        }
+
+        protected virtual void _writeLine(string s, params object[] args)
+        {
+            Console.WriteLine("[" + id + "] " + String.Format(s, args));
+
+            System.IO.File.WriteAllText(file, "[" + id + "] " + String.Format(s, args));
+        }
+
+        protected virtual void _info(string s, params object[] args)
+        {
+            Console.WriteLine("[INFO-" + id + "] " + String.Format(s, args));
+
+            System.IO.File.WriteAllText(file, "[INFO-" + id + "] " + String.Format(s, args));
+        }
+
+        protected virtual void _debug(string s, params object[] args)
+        {
+            Console.WriteLine("[DEBUG-" + id + "]" + String.Format(s, args));
+
+            System.IO.File.WriteAllText(file, "[DEBUG-" + id + "] " + String.Format(s, args));
+        }
+    }
 }
