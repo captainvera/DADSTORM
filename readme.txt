@@ -14,3 +14,4 @@ README - GRUPO 14 - DADStorm
   - The project should now start running, after the config is parsed
        (for further testing the command readfile <OP> <replica_number> will read the tweeters.dat file from the project root if present and process it's contents)
 
+[DADSTORM Paper](https://github.com/captainvera/DADSTORM/blob/master/latex/latex8.pdf)
